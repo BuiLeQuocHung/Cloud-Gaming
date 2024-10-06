@@ -1,0 +1,15 @@
+services:
+  coordinator:
+    build:
+      context: ../
+      dockerfile: docker/coordinator/Dockerfile
+    ports:
+      - 9090:9090
+  worker:
+    build:
+      context: ../
+      dockerfile: docker/worker/Dockerfile
+    ports:
+      - 9000:9000/udp
+    depends_on:
+      - coordinator
