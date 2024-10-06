@@ -104,8 +104,6 @@ func (e *Emulator) DeInit() {
 }
 
 func (e *Emulator) LoadGame(path string) error {
-	log.Println("core: ", e.core)
-
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
@@ -120,10 +118,6 @@ func (e *Emulator) LoadGame(path string) error {
 		Data: unsafe.Pointer(cData),
 	}
 
-	log.Printf("Game Path: %s\n", gameInfo.Path)
-	log.Printf("Game Size: %d\n", gameInfo.Size)
-	log.Printf("Game Data: %v\n", gameInfo.Data)
-
 	isSuccess := e.core.LoadGame(gameInfo)
 	if !isSuccess {
 		return errors.New("load game failed")
@@ -137,7 +131,6 @@ func (e *Emulator) UnloadGame() {
 
 // Run runs the game for one video frame.
 func (e *Emulator) Run() {
-	// log.Println("run core: ", e.core)
 	e.core.Run()
 }
 
@@ -145,7 +138,6 @@ func (e *Emulator) Run() {
 // system audio/video timings and geometry.
 // Can be called only after retro_load_game() has successfully completed.
 func (e *Emulator) GetSystemAVInfo() libretro.SystemAVInfo {
-	log.Println("Load AV info")
 	res := e.core.GetSystemAVInfo()
 	return res
 }

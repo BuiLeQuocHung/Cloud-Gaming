@@ -1,22 +1,21 @@
 package coordinator
 
 import (
-	"log"
+	"cloud_gaming/pkg/log"
 
 	"github.com/gorilla/websocket"
+	"go.uber.org/zap"
 )
 
 func (c *Coordinator) workerRequestHandler(connection *Connection) {
 	senderId := connection.id
 	conn := connection.conn
 
-	log.Println("listening to worker")
-
 	for {
 		_, data, err := conn.ReadMessage()
 		if err != nil {
+			log.Debug("worker web socket closed", zap.Error(err))
 			conn.Close()
-			log.Println("worker web socket closed", err)
 			break
 		}
 

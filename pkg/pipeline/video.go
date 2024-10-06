@@ -4,10 +4,11 @@ import (
 	"cloud_gaming/pkg/encoder"
 	"cloud_gaming/pkg/format"
 	"cloud_gaming/pkg/libretro"
-	"fmt"
-	"log"
+	"cloud_gaming/pkg/log"
 	"sync"
 	"unsafe"
+
+	"go.uber.org/zap"
 )
 
 type (
@@ -69,14 +70,14 @@ func (v *VideoPipeline) SetSystemVideoInfo(systemAVInfo *libretro.SystemAVInfo) 
 func (v *VideoPipeline) createEncoder() {
 	enc, err := encoder.NewVP9Encoder(v.width, v.height, int(v.fps))
 	if err != nil {
-		log.Println(fmt.Errorf("create encoder in video pipeline failed: %w", err))
+		log.Debug("create encoder in video pipeline failed", zap.Error(err))
 	}
 	v.enc = enc
 }
 
 func (v *VideoPipeline) SetPixelFormat(data unsafe.Pointer) {
 	fmt := libretro.GetPixelFormat(data)
-	log.Println("pixel fmt: ", fmt)
+	log.Debug("pixel fmt: ", zap.Uint32("pixFmt", fmt))
 
 	switch fmt {
 	case libretro.PixelFormat0RGB1555:
@@ -95,8 +96,6 @@ func (v *VideoPipeline) SetPixelFormat(data unsafe.Pointer) {
 			bpp:    2,
 		}
 	}
-
-	log.Println("pixel format: ", v.pixelFmt)
 }
 
 func (v *VideoPipeline) SetRotation(data unsafe.Pointer) {
@@ -123,21 +122,20 @@ func (v *VideoPipeline) Process(data []byte, width, height, pitch int32) {
 	}
 
 	if err != nil {
-		log.Println("convert error: ", err)
+		log.Debug("convert error: ", zap.Error(err))
 		return
 	}
 
 	frameFmt, err = frameFmt.Resize(v.height, v.width)
 	if err != nil {
-		log.Println("resize error: ", err)
+		log.Debug("resize error: ", zap.Error(err))
 		return
 	}
 
 	if v.angle != 0 {
-		log.Println("angle: ", v.angle)
 		frameFmt, err = frameFmt.Rotate(v.angle)
 		if err != nil {
-			log.Printf("video pipeline: rotate image error: %s", err.Error())
+			log.Error("video pipeline: rotate image error", zap.Error(err))
 		}
 	}
 
@@ -149,7 +147,7 @@ func (v *VideoPipeline) Process(data []byte, width, height, pitch int32) {
 
 	err = v.enc.Encode(frameFmt, int(v.fps))
 	if err != nil {
-		log.Println("encode vp9 error: ", err)
+		log.Error("encode vp9 error", zap.Error(err))
 		return
 	}
 }
@@ -183,7 +181,7 @@ func (v *VideoPipeline) getEncodedDataAndSendFrame() {
 		})
 	}
 
-	log.Println("getEncodedDataAndSendFrame has stopped")
+	log.Debug("getEncodedDataAndSendFrame has stopped")
 }
 
 func (v *VideoPipeline) Close() error {

@@ -14,7 +14,6 @@ import "C"
 import (
 	"cloud_gaming/pkg/utils"
 	"fmt"
-	"log"
 	"math"
 	"unsafe"
 )
@@ -191,7 +190,6 @@ func (f *Yuv420Fmt) Resize(targetHeight, targetWidth int) (IVideoFormat, error) 
 
 	// Resize the input frame
 	if ret := C.sws_scale(swsContext, &inputFrame.data[0], &inputFrame.linesize[0], 0, C.int(height), &resizedFrame.data[0], &resizedFrame.linesize[0]); ret != C.int(targetHeight) {
-		log.Println(ret, targetHeight)
 		return nil, fmt.Errorf("Rotate YUV420: num of rows copied is not equal to height")
 	}
 

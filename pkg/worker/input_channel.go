@@ -17,6 +17,7 @@ type (
 		Pressed bool `json:"pressed"`
 	}
 
+	// currently not used
 	mouseData struct {
 		User   uint `json:"user"`
 		Button int  `json:"button"` // left, middle, right

@@ -59,7 +59,6 @@ int64_t coreGetTimeUsec_cgo();
 import "C"
 import (
 	"errors"
-	_log "log"
 	"strings"
 	"unsafe"
 )
@@ -491,7 +490,6 @@ func Load(sofile string) (*Core, error) {
 // Init takes care of the library global initialization
 func (core *Core) Init() {
 	C.bridge_retro_init(core.symRetroInit)
-	_log.Println("bridge retro init : ", core.symRetroInit)
 }
 
 // APIVersion returns the RETRO_API_VERSION.
@@ -575,7 +573,6 @@ func (core *Core) LoadGame(gi GameInfo) bool {
 	rgi.path = C.CString(gi.Path)
 	rgi.size = C.size_t(gi.Size)
 	rgi.data = gi.Data
-	_log.Println("symtroReloadGame: ", core.symRetroLoadGame)
 
 	return bool(C.bridge_retro_load_game(core.symRetroLoadGame, &rgi))
 }

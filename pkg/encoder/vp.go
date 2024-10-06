@@ -20,11 +20,13 @@ import "C"
 
 import (
 	"cloud_gaming/pkg/format"
+	"cloud_gaming/pkg/log"
 	"cloud_gaming/pkg/utils"
 	"fmt"
-	"log"
 	"sync"
 	"unsafe"
+
+	"go.uber.org/zap"
 )
 
 type (
@@ -147,7 +149,6 @@ func (e *VP9Encoder) receiveEncodedPacket() {
 		C.av_packet_unref(pkt) // reuse packet
 		e.mu.Lock()
 		if e.codecCtx == nil {
-			log.Println("")
 			e.mu.Unlock()
 			break
 		}
@@ -156,18 +157,16 @@ func (e *VP9Encoder) receiveEncodedPacket() {
 		e.mu.Unlock()
 
 		if ret == 0 {
-			// log.Println("Finally, it's working")
 			e.channel <- C.GoBytes(unsafe.Pointer(pkt.data), pkt.size)
 		} else if ret == -C.EAGAIN {
-			// log.Println("error: C.EAGAIN")
 			continue
 		} else {
-			log.Println("error: receiving packet: ", utils.CErrorToString(int(ret)))
+			log.Debug("error: receiving packet: ", zap.Error(utils.CErrorToString(int(ret))))
 			break
 		}
 	}
 
-	log.Println("receiveEncodedPacket has stopped")
+	log.Debug("receiveEncodedPacket has stopped")
 }
 
 func (e *VP9Encoder) flushStream() error {
@@ -192,8 +191,8 @@ func (e *VP9Encoder) flushStream() error {
 		} else if ret == -C.EAGAIN {
 			break
 		} else {
-			log.Println(fmt.Errorf("flushStream: flush stream success: %w", utils.CErrorToString(int(ret))))
-			return nil
+			log.Debug("flushStream: flush stream success", zap.Error(utils.CErrorToString(int(ret))))
+			break
 		}
 	}
 
@@ -213,9 +212,7 @@ func (e *VP9Encoder) Close() error {
 	}
 
 	// drain channel
-	log.Println("drain channel")
 	for len(e.channel) > 0 {
-		log.Println("drain channel loop")
 		<-e.channel
 	}
 

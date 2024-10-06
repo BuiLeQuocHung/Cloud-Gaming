@@ -1,14 +1,15 @@
 package webrtc
 
 import (
+	"cloud_gaming/pkg/log"
 	"cloud_gaming/pkg/message"
 	"encoding/json"
-	"log"
 
 	_websocket "cloud_gaming/pkg/websocket"
 
 	"github.com/pion/webrtc/v3"
 	"github.com/pion/webrtc/v3/pkg/media"
+	"go.uber.org/zap"
 )
 
 type (
@@ -41,11 +42,9 @@ func NewPeerConnection(signalConn *_websocket.Conn, factory *Factory) (*PeerConn
 			return
 		}
 
-		log.Println("worker send ice candidate")
-
 		payload, err := json.Marshal(candidate.ToJSON())
 		if err != nil {
-			log.Println(" onicecandidate error: %w", err)
+			log.Error(" onicecandidate error", zap.Error(err))
 			payload = nil
 		}
 
@@ -57,7 +56,7 @@ func NewPeerConnection(signalConn *_websocket.Conn, factory *Factory) (*PeerConn
 	})
 
 	peerConn.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
-		log.Println("state change: ", state.String())
+		log.Debug("state change", zap.String("state", state.String()))
 	})
 
 	pc := &PeerConnection{
@@ -83,7 +82,7 @@ func (pc *PeerConnection) addAVTrack() error {
 		"video",
 	)
 	if err != nil {
-		log.Println("create video track: ", err)
+		log.Error("create video track: ", zap.Error(err))
 		return err
 	}
 	pc.vTrack = videoTrack
@@ -94,15 +93,13 @@ func (pc *PeerConnection) addAVTrack() error {
 		"audio",
 	)
 	if err != nil {
-		log.Println("create audio track: ", err)
+		log.Error("create audio track: ", zap.Error(err))
 		return err
 	}
 	pc.aTrack = audioTrack
 
-	_, err = pc.AddTrack(videoTrack)
-	log.Println("video track: ", err)
-	_, err = pc.AddTrack(audioTrack)
-	log.Println("audio track: ", err)
+	pc.AddTrack(videoTrack)
+	pc.AddTrack(audioTrack)
 	return nil
 }
 

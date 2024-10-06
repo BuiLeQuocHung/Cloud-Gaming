@@ -1,7 +1,6 @@
 package coordinator
 
 import (
-	"log"
 	"math/rand"
 	"sync"
 )
@@ -32,7 +31,6 @@ func (c *Coordinator) bindUserAndWorker(userConn *Connection) bool {
 	defer c.binding.Unlock()
 
 	userId := userConn.id
-	log.Println(c.freeWorkers)
 
 	n := len(c.freeWorkers)
 	if n == 0 {
@@ -41,14 +39,11 @@ func (c *Coordinator) bindUserAndWorker(userConn *Connection) bool {
 
 	idx := rand.Int() % n
 	workerConn := c.freeWorkers[idx]
-	log.Println("random idx: ", idx)
 
 	pair := &Pair{
 		user:   userConn,
 		worker: workerConn,
 	}
-
-	log.Println("pair: ", *pair)
 
 	c.binding.users[userId] = pair
 	c.binding.workers[workerConn.id] = pair
@@ -58,7 +53,6 @@ func (c *Coordinator) bindUserAndWorker(userConn *Connection) bool {
 	temp = append(temp, c.freeWorkers[idx+1:]...)
 	c.freeWorkers = temp
 
-	log.Println(c.freeWorkers)
 	return true
 }
 

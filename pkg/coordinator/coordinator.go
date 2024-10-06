@@ -1,14 +1,15 @@
 package coordinator
 
 import (
+	"cloud_gaming/pkg/log"
 	"cloud_gaming/pkg/message"
 	"cloud_gaming/pkg/storage"
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"go.uber.org/zap"
 )
 
 type (
@@ -54,7 +55,8 @@ func (c *Coordinator) Run() {
 }
 
 func (c *Coordinator) listenForNewWebSocketConn() {
-	log.Println("listening on websocket")
+	log.Debug("listening on websocket")
+
 	for {
 		select {
 		case conn := <-c.newConn:
@@ -80,7 +82,8 @@ func (c *Coordinator) handleInitWebSocketWorker() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		conn, err := upgrader.Upgrade(w, r, nil)
-		log.Println("worker opens coonection", err)
+		log.Debug("worker opens coonection", zap.Error(err))
+
 		if err != nil {
 			return
 		}
@@ -105,14 +108,11 @@ func (c *Coordinator) handleInitWebSocketUser() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Println("wtf")
 		conn, err := upgrader.Upgrade(w, r, nil)
-		log.Println("user open connection: ", err)
 		if err != nil {
 			return
 		}
 
-		log.Println(1)
 		id := uuid.New()
 		newConn := &Connection{
 			id:    id.String(),
@@ -120,28 +120,26 @@ func (c *Coordinator) handleInitWebSocketUser() http.HandlerFunc {
 			conn:  conn,
 		}
 
-		log.Println(2)
 		if !c.bindUserAndWorker(newConn) {
-			log.Println("cannot bind worker")
+			log.Error("cannot bind worker")
 			conn.Close()
 			return
 		}
 
-		log.Println(3)
 		payload, err := json.Marshal(c.getListGames())
 		if err != nil {
-			log.Println("cannot get  list game")
+			log.Error("cannot get  list game")
 			return
 		}
 
-		log.Println(4)
 		// send list games to client
 		newConn.conn.WriteJSON(message.ResponseMsg{
 			Label:   message.MSG_COOR_HANDSHAKE,
 			Payload: payload,
 			Error:   nil,
 		})
-		log.Println("Send game list to client", c.getListGames())
+
+		log.Debug("Send game list to client", zap.Any("games", c.getListGames()))
 		c.newConn <- newConn
 	}
 }

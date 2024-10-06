@@ -2,6 +2,7 @@ package worker
 
 import (
 	"cloud_gaming/pkg/emulator"
+	"cloud_gaming/pkg/log"
 	"cloud_gaming/pkg/message"
 	"cloud_gaming/pkg/pipeline"
 	"cloud_gaming/pkg/storage"
@@ -9,11 +10,11 @@ import (
 	_websocket "cloud_gaming/pkg/websocket"
 
 	"encoding/json"
-	"log"
 	"net/url"
 
 	"github.com/gorilla/websocket"
 	"github.com/pion/webrtc/v3"
+	"go.uber.org/zap"
 )
 
 type (
@@ -59,7 +60,7 @@ func (w *Worker) initWebSocketConnToCoordinator() {
 
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
-		log.Fatal("Dial error:", err)
+		log.Fatal("Dial error", zap.Error(err))
 	}
 
 	w.coordinatorConn = _websocket.New(c)
@@ -73,7 +74,6 @@ func (w *Worker) requestHandler() {
 
 	w.peerConn, err = _webrtc.NewPeerConnection(conn, w.webrtcFactory)
 	if err != nil {
-		log.Println("create pc failed: ", err)
 		return
 	}
 
@@ -81,19 +81,15 @@ func (w *Worker) requestHandler() {
 		_, data, err := conn.ReadMessage()
 		if err != nil {
 			conn.Close()
-			log.Println("worker web socket closed")
+			log.Debug("worker web socket closed")
 			break
 		}
 
 		msg := &message.RequestMsg{}
 		if err := json.Unmarshal(data, msg); err != nil {
-			log.Println("unmarshal error: ", err)
 			w.sendError("unknown", "unmarshal request message failed")
 			break
 		}
-
-		log.Println("message: ", msg)
-		log.Println("message payload: ", string(msg.Payload))
 
 		switch msg.Label {
 		case message.MSG_WEBRTC_INIT:
@@ -102,34 +98,24 @@ func (w *Worker) requestHandler() {
 				w.handleMouseChannel(),
 			)
 			if err != nil {
-				log.Println("create input channel failed: ", err)
 				w.sendError(msg.Label, "create input channel failed")
 			}
 
 			localSD, err := w.peerConn.CreateOffer(nil)
 			if err != nil {
-				log.Println("localSD error: ", err)
 				w.sendError(msg.Label, "create local session description failed")
 			}
-			log.Println("localSD: ", localSD)
 
 			err = w.peerConn.SetLocalDescription(localSD)
 			if err != nil {
 				w.sendError(msg.Label, "set local description failed")
 			}
 
-			// err = w.peerConn.AddAVTrack()
-			// if err != nil {
-			// 	log.Println("create track failed: ", err)
-			// 	w.sendError(msg.Label, "create video/audio track failed")
-			// }
-
 			payload, err := json.Marshal(localSD)
 			if err != nil {
 				w.sendError(msg.Label, "marshal local session description failed")
 			}
 
-			log.Println("payload: ", payload)
 			res := &message.ResponseMsg{
 				Label:   message.MSG_WEBRTC_OFFER,
 				Payload: payload,
@@ -146,7 +132,6 @@ func (w *Worker) requestHandler() {
 			w.peerConn.SetRemoteDescription(*remoteSD)
 
 		case message.MSG_WEBRTC_ICE_CANDIDATE:
-			log.Println("here  abc")
 			var candidate = &webrtc.ICECandidateInit{}
 			err := json.Unmarshal(msg.Payload, candidate)
 			if err != nil {
@@ -157,8 +142,6 @@ func (w *Worker) requestHandler() {
 		case message.MSG_START_GAME:
 			r := &StartGameRequest{}
 			err = json.Unmarshal(msg.Payload, r)
-			log.Println("start game: ", r)
-			log.Println(err)
 			if err != nil {
 				w.sendError(msg.Label, "unmarshal game request failed")
 			}
@@ -183,7 +166,7 @@ func (w *Worker) sendError(label message.MsgType, text string) {
 func (w *Worker) InitWebrtcFactory() {
 	factory, err := _webrtc.NewFactory()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("init webrtc factory failed", zap.Error(err))
 	}
 
 	w.webrtcFactory = factory

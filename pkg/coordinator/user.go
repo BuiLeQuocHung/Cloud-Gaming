@@ -1,9 +1,10 @@
 package coordinator
 
 import (
-	"log"
+	"cloud_gaming/pkg/log"
 
 	"github.com/gorilla/websocket"
+	"go.uber.org/zap"
 )
 
 func (c *Coordinator) userRequestHandler(connection *Connection) {
@@ -13,7 +14,7 @@ func (c *Coordinator) userRequestHandler(connection *Connection) {
 	for {
 		_, data, err := conn.ReadMessage()
 		if err != nil {
-			log.Println("user web socket closed", err)
+			log.Debug("user web socket closed", zap.Error(err))
 			conn.Close()
 			break
 		}

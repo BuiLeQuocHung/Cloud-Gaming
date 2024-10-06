@@ -4,8 +4,10 @@ import (
 	"cloud_gaming/pkg/encoder"
 	"cloud_gaming/pkg/format"
 	"cloud_gaming/pkg/libretro"
-	"log"
+	"cloud_gaming/pkg/log"
 	"sync"
+
+	"go.uber.org/zap"
 )
 
 type (
@@ -44,7 +46,8 @@ func NewAudioPipeline(sendAudioPacket SendAudioPacketFunc) *AudioPipeline {
 func (a *AudioPipeline) init() {
 	opusEncoder, err := encoder.NewOpusEncoder(a.sampleRate, a.channel)
 	if err != nil {
-		log.Println("opus init failed: ", err)
+		log.Error("opus init failed", zap.Error(err))
+		return
 	}
 	a.enc = opusEncoder
 }
@@ -57,7 +60,6 @@ func (a *AudioPipeline) SetSystemAudioInfo(systemAVInfo *libretro.SystemAVInfo) 
 	a.buffer = buffer
 	a.maxLen = int(maxLen)
 	a.sampleRate = int(sampleRate)
-	log.Println("maxlen: ", a.maxLen)
 
 	a.init()
 }
@@ -80,7 +82,7 @@ func (a *AudioPipeline) Process(data []int16, frames int32) {
 		if a.offset == a.maxLen {
 			buf, err := a.enc.Encode(a.buffer)
 			if err != nil {
-				log.Println("audio encoding error: ", err)
+				log.Warn("audio encoding error: ", zap.Error(err))
 				return
 			}
 
@@ -109,6 +111,9 @@ func (a *AudioPipeline) SendAudioPacket(packet *AudioPacket) {
 }
 
 func (a *AudioPipeline) Close() error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
 	a.buffer = nil
 	a.maxLen = 0
 	a.offset = 0
