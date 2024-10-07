@@ -74,7 +74,7 @@ func (w *Worker) requestHandler() {
 
 	w.peerConn, err = _webrtc.NewPeerConnection(conn, w.webrtcFactory)
 	if err != nil {
-		return
+		log.Fatal("create webrtc onnection failed", zap.Error(err))
 	}
 
 	for {

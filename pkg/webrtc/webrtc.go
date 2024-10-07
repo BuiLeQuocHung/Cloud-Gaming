@@ -64,8 +64,9 @@ func NewPeerConnection(signalConn *_websocket.Conn, factory *Factory) (*PeerConn
 		PeerConnection: peerConn,
 	}
 
-	pc.addAVTrack()
-
+	if err := pc.addAVTrack(); err != nil {
+		return nil, err
+	}
 	return pc, nil
 }
 
