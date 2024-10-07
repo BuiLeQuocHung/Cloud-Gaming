@@ -54,6 +54,10 @@ func (a *AudioPipeline) init() {
 
 func (a *AudioPipeline) SetSystemAudioInfo(systemAVInfo *libretro.SystemAVInfo) {
 	sampleRate := systemAVInfo.Timing.SampleRate
+	if sampleRate != 48000 {
+		sampleRate = 48000
+	}
+
 	maxLen := int16(sampleRate * 10 / 1000 * float64(a.channel))
 	buffer := make([]int16, maxLen)
 
