@@ -7,7 +7,7 @@ import (
 var logger *zap.Logger
 
 func init() {
-	logger, _ = zap.NewProduction()
+	logger, _ = zap.NewDevelopment()
 }
 
 func Error(msg string, fields ...zap.Field) {

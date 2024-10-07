@@ -54,6 +54,7 @@ func (w *Worker) startEmulator(r *StartGameRequest) error {
 	systemAVInfo := w.emulator.GetSystemAVInfo()
 	w.setSystemAVInfo(&systemAVInfo)
 
+	log.Debug("system av info", zap.Any("info", systemAVInfo))
 	log.Debug("start game", zap.String("game", r.Game))
 	go w.startGame()
 	return nil
