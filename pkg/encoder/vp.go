@@ -58,6 +58,7 @@ func NewVP9Encoder(width, height, fps int) (IVideoEncoder, error) {
 	codecCtx.height = C.int(height)
 	codecCtx.time_base = C.AVRational{num: 1, den: C.int(fps)}
 	codecCtx.pix_fmt = int32(format.YUV420)
+	codecCtx.gop_size = C.int(fps)
 
 	if ret := C.avcodec_open2(codecCtx, codec, nil); ret < 0 {
 		return nil, fmt.Errorf("could not open codec: %w", utils.CErrorToString(int(ret)))

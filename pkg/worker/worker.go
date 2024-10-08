@@ -72,9 +72,9 @@ func (w *Worker) requestHandler() {
 	conn := w.coordinatorConn
 	defer conn.Close()
 
-	w.peerConn, err = _webrtc.NewPeerConnection(conn, w.webrtcFactory)
+	w.peerConn, err = w.resetWebRTC()
 	if err != nil {
-		log.Fatal("create webrtc onnection failed", zap.Error(err))
+		log.Fatal("create webrtc connection failed", zap.Error(err))
 	}
 
 	for {
@@ -98,21 +98,25 @@ func (w *Worker) requestHandler() {
 				w.handleMouseChannel(),
 			)
 			if err != nil {
+				log.Debug("create input channel failed")
 				w.sendError(msg.Label, "create input channel failed")
 			}
 
 			localSD, err := w.peerConn.CreateOffer(nil)
 			if err != nil {
+				log.Debug("create local session description failed")
 				w.sendError(msg.Label, "create local session description failed")
 			}
 
 			err = w.peerConn.SetLocalDescription(localSD)
 			if err != nil {
+				log.Debug("set local description failed")
 				w.sendError(msg.Label, "set local description failed")
 			}
 
 			payload, err := json.Marshal(localSD)
 			if err != nil {
+				log.Debug("marshal local session description failed")
 				w.sendError(msg.Label, "marshal local session description failed")
 			}
 
@@ -170,4 +174,22 @@ func (w *Worker) InitWebrtcFactory() {
 	}
 
 	w.webrtcFactory = factory
+}
+
+func (w *Worker) CallbackWebRTCDisconnected() {
+	var err error
+
+	w.stopEmulator()
+	w.peerConn, err = w.resetWebRTC()
+	if err != nil {
+		log.Fatal("re-create webrtc connection failed", zap.Error(err))
+	}
+}
+
+func (w *Worker) resetWebRTC() (*_webrtc.PeerConnection, error) {
+	if w.peerConn != nil {
+		w.peerConn.Close()
+	}
+
+	return _webrtc.NewPeerConnection(w.coordinatorConn, w.webrtcFactory, w.CallbackWebRTCDisconnected)
 }

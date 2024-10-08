@@ -56,6 +56,35 @@ func (c *Coordinator) bindUserAndWorker(userConn *Connection) bool {
 	return true
 }
 
+func (b *Binding) removeBinding(id string) *Pair {
+	var (
+		userID   string
+		workerID string
+		pair     *Pair
+	)
+
+	b.Lock()
+	defer b.Unlock()
+
+	if p, ok := b.users[id]; ok {
+		pair = p
+		userID = p.user.id
+		workerID = p.worker.id
+	} else if p, ok := b.workers[id]; ok {
+		pair = p
+		userID = p.user.id
+		workerID = p.worker.id
+	} else {
+		// both worker and user disconnected, only one can call this function
+		return nil
+	}
+
+	delete(b.workers, workerID)
+	delete(b.users, userID)
+
+	return pair
+}
+
 func (b *Binding) Lock() {
 	b.mu.Lock()
 }

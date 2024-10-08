@@ -22,7 +22,9 @@ type (
 	}
 )
 
-func NewPeerConnection(signalConn *_websocket.Conn, factory *Factory) (*PeerConnection, error) {
+func NewPeerConnection(signalConn *_websocket.Conn, factory *Factory,
+	callbackWebRTCDisconnectedFunc func(),
+) (*PeerConnection, error) {
 	peerConn, err := factory.NewPeerConnection(
 		webrtc.Configuration{
 			ICEServers: []webrtc.ICEServer{
@@ -57,6 +59,11 @@ func NewPeerConnection(signalConn *_websocket.Conn, factory *Factory) (*PeerConn
 
 	peerConn.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
 		log.Debug("state change", zap.String("state", state.String()))
+
+		if state == webrtc.PeerConnectionStateDisconnected {
+			log.Debug("webrtc disconnected")
+			callbackWebRTCDisconnectedFunc()
+		}
 	})
 
 	pc := &PeerConnection{
@@ -126,4 +133,8 @@ func (pc *PeerConnection) SendVideoFrame(sample media.Sample) error {
 
 func (pc *PeerConnection) SendAudioFrame(sample media.Sample) error {
 	return pc.aTrack.WriteSample(sample)
+}
+
+func (pc *PeerConnection) Close() {
+	pc.PeerConnection.Close()
 }

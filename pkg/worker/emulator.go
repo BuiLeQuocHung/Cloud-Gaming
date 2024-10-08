@@ -82,7 +82,9 @@ func (w *Worker) stopGame() {
 }
 
 func (w *Worker) stopEmulator() {
-	w.emulator.SetState(emulator.Deinitializing)
+	if w.emulator.IsRunning() {
+		w.emulator.SetState(emulator.Deinitializing)
+	}
 }
 
 func (w *Worker) setSystemAVInfo(systemAVInfo *libretro.SystemAVInfo) {
