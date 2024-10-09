@@ -3,8 +3,9 @@ This is my personal project about cloud gaming
 
 # Credit
 Shout out to 
-- https://github.com/giongto35/cloud-game , which helps me to understand the architecture of cloud gaming
+- https://github.com/giongto35/cloud-game, which helps me to understand the architecture of cloud gaming
 - https://github.com/libretro/ludo, a great repo to understand libretro
+- https://github.com/pion/webrtc, a great library for webrtc connection
 
 # Run
 If you haven't installed docker yet, please install it at https://www.docker.com/
