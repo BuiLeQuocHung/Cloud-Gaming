@@ -1,17 +1,17 @@
 package emulator
 
+/*
+#include <stdlib.h>
+*/
+import "C"
 import (
 	"cloud_gaming/pkg/libretro"
 	"errors"
 	"log"
 	"os"
+	"time"
 	"unsafe"
 )
-
-/*
-#include <stdlib.h>
-*/
-import "C"
 
 const (
 	MAX_PLAYERS = 2
@@ -23,7 +23,11 @@ type (
 		state   EmulatorState
 		players [MAX_PLAYERS]Player
 
-		systemDir string
+		systemDir  string
+		systemInfo libretro.SystemAVInfo
+
+		// only render next frame if cur_time - prev_time >= 1 / fps
+		lastTime time.Time
 	}
 
 	EmulatorState int
@@ -122,6 +126,8 @@ func (e *Emulator) LoadGame(path string) error {
 	if !isSuccess {
 		return errors.New("load game failed")
 	}
+
+	e.systemInfo = e.core.GetSystemAVInfo()
 	return nil
 }
 
@@ -131,15 +137,20 @@ func (e *Emulator) UnloadGame() {
 
 // Run runs the game for one video frame.
 func (e *Emulator) Run() {
-	e.core.Run()
+	curTime := time.Now()
+	delta := time.Second / time.Duration(e.systemInfo.Timing.FPS)
+
+	if time.Since((e.lastTime)) >= delta {
+		e.core.Run()
+		e.lastTime = curTime
+	}
 }
 
 // GetSystemAVInfo returns information about
 // system audio/video timings and geometry.
 // Can be called only after retro_load_game() has successfully completed.
 func (e *Emulator) GetSystemAVInfo() libretro.SystemAVInfo {
-	res := e.core.GetSystemAVInfo()
-	return res
+	return e.core.GetSystemAVInfo()
 }
 
 func (e *Emulator) LogCallback(level uint32, msg string) {
