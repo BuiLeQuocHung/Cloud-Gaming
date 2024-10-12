@@ -73,6 +73,7 @@ func (a *AudioPipeline) Process(data []int16, frames int32) {
 	defer a.mu.Unlock()
 
 	if a.enc == nil {
+		log.Error("encoder is nil")
 		return
 	}
 
@@ -86,7 +87,7 @@ func (a *AudioPipeline) Process(data []int16, frames int32) {
 		if a.offset == a.maxLen {
 			buf, err := a.enc.Encode(a.buffer)
 			if err != nil {
-				log.Warn("audio encoding error: ", zap.Error(err))
+				log.Error("audio encoding error: ", zap.Error(err))
 				return
 			}
 

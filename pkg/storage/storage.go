@@ -113,14 +113,6 @@ func (s *Storage) LoadCoresMetadata() {
 		Path: filepath.Join(path, "mednafen_gba_libretro.so"),
 	})
 
-	res = append(res, CoreMeta{
-		Name: "mednafen_psx_libretro",
-		SupportedType: map[string]interface{}{
-			"bin": struct{}{},
-		},
-		Path: filepath.Join(path, "mednafen_psx_libretro.so"),
-	})
-
 	s.cores = res
 }
 

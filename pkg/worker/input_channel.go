@@ -1,9 +1,11 @@
 package worker
 
 import (
+	"cloud_gaming/pkg/log"
 	"encoding/json"
 
 	"github.com/pion/webrtc/v3"
+	"go.uber.org/zap"
 )
 
 type (
@@ -31,6 +33,7 @@ func (w *Worker) handleKeyboardChannel() func(msg webrtc.DataChannelMessage) {
 		var kb = &keyboardData{}
 		err := json.Unmarshal(msg.Data, kb)
 		if err != nil {
+			log.Error("unmarshal keyboard data failed", zap.Error(err))
 			return
 		}
 
@@ -46,6 +49,7 @@ func (w *Worker) handleMouseChannel() func(msg webrtc.DataChannelMessage) {
 		var mouse = &mouseData{}
 		err := json.Unmarshal(msg.Data, mouse)
 		if err != nil {
+			log.Error("unmarshal mouse data failed", zap.Error(err))
 			return
 		}
 

@@ -24,11 +24,13 @@ func (w *Worker) startEmulator(r *StartGameRequest) error {
 
 	gameMeta, err := w.storage.GetGameMetadata(r.Game)
 	if err != nil {
+		log.Error("get game metadata failed", zap.Error(err))
 		return err
 	}
 
 	coreMeta, err := w.storage.GetSuitableCore(gameMeta.FileType)
 	if err != nil {
+		log.Error("get core metadata failed", zap.Error(err))
 		return err
 	}
 
@@ -40,12 +42,14 @@ func (w *Worker) startEmulator(r *StartGameRequest) error {
 		w.audioSampleBatchCallback,
 	)
 	if err != nil {
+		log.Error("load core failed", zap.Error(err))
 		return err
 	}
 
 	w.emulator.Init()
 	err = w.emulator.LoadGame(gameMeta.Path)
 	if err != nil {
+		log.Error("load game failed", zap.Error(err))
 		return err
 	}
 

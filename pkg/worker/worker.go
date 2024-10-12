@@ -98,25 +98,25 @@ func (w *Worker) requestHandler() {
 				w.handleMouseChannel(),
 			)
 			if err != nil {
-				log.Debug("create input channel failed")
+				log.Error("create input channel failed", zap.Error(err))
 				w.sendError(msg.Label, "create input channel failed")
 			}
 
 			localSD, err := w.peerConn.CreateOffer(nil)
 			if err != nil {
-				log.Debug("create local session description failed")
+				log.Error("create local session description failed", zap.Error(err))
 				w.sendError(msg.Label, "create local session description failed")
 			}
 
 			err = w.peerConn.SetLocalDescription(localSD)
 			if err != nil {
-				log.Debug("set local description failed")
+				log.Error("set local description failed", zap.Error(err))
 				w.sendError(msg.Label, "set local description failed")
 			}
 
 			payload, err := json.Marshal(localSD)
 			if err != nil {
-				log.Debug("marshal local session description failed")
+				log.Error("marshal local session description failed", zap.Error(err))
 				w.sendError(msg.Label, "marshal local session description failed")
 			}
 
@@ -131,6 +131,7 @@ func (w *Worker) requestHandler() {
 			var remoteSD = &webrtc.SessionDescription{}
 			err := json.Unmarshal(msg.Payload, remoteSD)
 			if err != nil {
+				log.Error("unmarshal session description offer failed", zap.Error(err))
 				w.sendError(msg.Label, "unmarshal session description offer failed")
 			}
 			w.peerConn.SetRemoteDescription(*remoteSD)
@@ -139,6 +140,7 @@ func (w *Worker) requestHandler() {
 			var candidate = &webrtc.ICECandidateInit{}
 			err := json.Unmarshal(msg.Payload, candidate)
 			if err != nil {
+				log.Error("unmarshal ice candidate failed", zap.Error(err))
 				w.sendError(msg.Label, "unmarshal ice candidate failed")
 			}
 			w.peerConn.AddICECandidate(*candidate)
@@ -147,11 +149,13 @@ func (w *Worker) requestHandler() {
 			r := &StartGameRequest{}
 			err = json.Unmarshal(msg.Payload, r)
 			if err != nil {
+				log.Error("unmarshal game request failed", zap.Error(err))
 				w.sendError(msg.Label, "unmarshal game request failed")
 			}
 
 			err = w.startEmulator(r)
 			if err != nil {
+				log.Error("start emulator failed", zap.Error(err))
 				w.sendError(msg.Label, "start emulator failed")
 			}
 

@@ -122,13 +122,13 @@ func (v *VideoPipeline) Process(data []byte, width, height, pitch int32) {
 	}
 
 	if err != nil {
-		log.Debug("convert error: ", zap.Error(err))
+		log.Error("convert error", zap.Error(err))
 		return
 	}
 
 	frameFmt, err = frameFmt.Resize(v.height, v.width)
 	if err != nil {
-		log.Debug("resize error: ", zap.Error(err))
+		log.Error("resize error", zap.Error(err))
 		return
 	}
 
@@ -142,6 +142,7 @@ func (v *VideoPipeline) Process(data []byte, width, height, pitch int32) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 	if v.enc == nil {
+		log.Error("encoder is nil")
 		return
 	}
 
