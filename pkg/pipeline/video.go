@@ -196,5 +196,6 @@ func (v *VideoPipeline) Close() error {
 	v.angle = format.ANGLE0
 	v.fps = 0
 
+	format.FmtCtx.Reset()
 	return nil
 }

@@ -19,6 +19,7 @@ package encoder
 import "C"
 
 import (
+	"cloud_gaming/pkg/ffmpeg/video"
 	"cloud_gaming/pkg/format"
 	"cloud_gaming/pkg/log"
 	"cloud_gaming/pkg/utils"
@@ -89,35 +90,8 @@ func (e *VP9Encoder) Encode(videoFrame format.IVideoFormat, fps int) error {
 		return nil
 	}
 
-	resizedData := videoFrame.GetData()
-	codecCtx := e.codecCtx
-
-	// Allocate frame for the encoded output
-	frame := C.av_frame_alloc()
-	if frame == nil {
-		return fmt.Errorf("could not allocate frame")
-	}
-	defer C.av_frame_free(&frame)
-
-	// Fill the frame with YUV data
-	frame.width = codecCtx.width
-	frame.height = codecCtx.height
-	frame.format = C.int(videoFrame.GetFormat())
-
-	// Allocate buffer for the frame
-	numBytes := C.av_image_get_buffer_size(int32(frame.format), frame.width, frame.height, 1)
-	buffer := C.av_malloc(C.size_t(numBytes))
-	defer C.av_free(buffer)
-
-	// Fill the frame data
-	ret := C.av_image_fill_arrays(&frame.data[0], &frame.linesize[0], (*C.uint8_t)(buffer), int32(frame.format), frame.width, frame.height, 1)
-	if ret < 0 {
-		return utils.CErrorToString(int(ret))
-	}
-
-	copy((*[1 << 30]byte)(unsafe.Pointer(buffer))[:numBytes], resizedData)
-
-	if ret := C.avcodec_send_frame(e.codecCtx, frame); ret < 0 {
+	var frame *video.AVFrame = videoFrame.GetFrame()
+	if ret := C.avcodec_send_frame(e.codecCtx, (*C.AVFrame)(unsafe.Pointer(frame))); ret < 0 {
 		return fmt.Errorf("error sending frame for encoding: %w", utils.CErrorToString(int(ret)))
 	}
 

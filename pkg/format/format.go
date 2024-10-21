@@ -1,19 +1,24 @@
 package format
 
 /*
-#cgo pkg-config: libavcodec libavformat libavfilter libavutil libswscale
+#cgo pkg-config: libavcodec
 #include <libavcodec/avcodec.h>
 */
 import "C"
 
+import (
+	"cloud_gaming/pkg/ffmpeg/video"
+)
+
 type (
 	IVideoFormat interface {
-		GetData() []byte
+		GetFrame() *video.AVFrame
 		GetWidth() int
 		GetHeight() int
 		GetFormat() VideoFormat
 		Rotate(d Angle) (IVideoFormat, error)
 		Resize(int, int) (IVideoFormat, error)
+		Close()
 	}
 
 	IAudioFormat interface {
