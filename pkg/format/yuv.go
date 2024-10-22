@@ -165,8 +165,8 @@ func (f *Yuv420Fmt) Resize(targetHeight, targetWidth int) (IVideoFormat, error) 
 		return nil, fmt.Errorf("Resize YUV420: failed to allocate AVFrame")
 	}
 
-	frame.SetWidth(width)
-	frame.SetHeight(height)
+	frame.SetWidth(targetWidth)
+	frame.SetHeight(targetHeight)
 	frame.SetFormat(int(YUV420))
 
 	// Allocate buffer for the new frame

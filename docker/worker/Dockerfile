@@ -2,8 +2,6 @@
 FROM golang:1.23
 
 ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/lib/pkgconfig
-# ENV GOPATH=/go
-# ENV PATH=$PATH:/go/bin
 
 WORKDIR /worker
 COPY go.mod go.sum ./
@@ -33,11 +31,6 @@ RUN apt-get update && \
         build-essential \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
-
-# Check for correct flags using pkg-config
-RUN pkg-config --cflags --libs libavcodec libavformat libavutil vpx
-RUN ldd --version
-
 
 COPY . .
 RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o /cmd/worker ./cmd/worker/main.go

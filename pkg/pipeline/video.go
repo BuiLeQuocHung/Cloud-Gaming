@@ -100,7 +100,6 @@ func (v *VideoPipeline) SetPixelFormat(data unsafe.Pointer) {
 
 func (v *VideoPipeline) SetRotation(data unsafe.Pointer) {
 	v.angle = format.Angle(int(uintptr(data)) % 4)
-	v.angle = 1
 }
 
 func (v *VideoPipeline) Process(data []byte, width, height, pitch int32) {
@@ -132,10 +131,11 @@ func (v *VideoPipeline) Process(data []byte, width, height, pitch int32) {
 		return
 	}
 
-	if v.angle != 0 {
+	if v.angle != format.ANGLE0 {
 		frameFmt, err = frameFmt.Rotate(v.angle)
 		if err != nil {
 			log.Error("video pipeline: rotate image error", zap.Error(err))
+			return
 		}
 	}
 
