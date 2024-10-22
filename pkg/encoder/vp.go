@@ -91,6 +91,7 @@ func (e *VP9Encoder) Encode(videoFrame format.IVideoFormat, fps int) error {
 	}
 
 	var frame *video.AVFrame = videoFrame.GetFrame()
+	defer frame.Close()
 	if ret := C.avcodec_send_frame(e.codecCtx, (*C.AVFrame)(unsafe.Pointer(frame))); ret < 0 {
 		return fmt.Errorf("error sending frame for encoding: %w", utils.CErrorToString(int(ret)))
 	}

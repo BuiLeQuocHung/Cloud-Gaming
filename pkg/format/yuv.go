@@ -143,6 +143,9 @@ func (f *Yuv420Fmt) Resize(targetHeight, targetWidth int) (IVideoFormat, error) 
 		format = f.GetFormat()
 	)
 
+	// Close old frame
+	defer f.Close()
+
 	swsContext := FmtCtx.Get(CtxKey{
 		from_width:  width,
 		from_height: height,
@@ -187,9 +190,6 @@ func (f *Yuv420Fmt) Resize(targetHeight, targetWidth int) (IVideoFormat, error) 
 		return nil, fmt.Errorf("Resize YUV420: num of rows copied is not equal to height")
 	}
 
-	// Close old frame
-	f.Close()
-
 	return &Yuv420Fmt{
 		AVFrame: frame,
 	}, nil
@@ -200,6 +200,9 @@ func (f *Yuv420Fmt) Rotate(angle Angle) (IVideoFormat, error) {
 	var (
 		rad = fmt.Sprintf("%f", float32(angle)*math.Pi)
 	)
+
+	// Close old frame
+	defer f.Close()
 
 	// Set up filter graph
 	filterGraph := C.avfilter_graph_alloc()
@@ -253,9 +256,6 @@ func (f *Yuv420Fmt) Rotate(angle Angle) (IVideoFormat, error) {
 	if ret := C.av_buffersink_get_frame(buffersinkCtx, (*C.AVFrame)(unsafe.Pointer(outputFrame))); ret < 0 {
 		return nil, fmt.Errorf("failed to get frame from buffer sink: %d", ret)
 	}
-
-	// Close old frame
-	f.Close()
 
 	return &Yuv420Fmt{
 		AVFrame: outputFrame,
