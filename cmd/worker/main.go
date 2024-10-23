@@ -5,12 +5,10 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"runtime"
 	"syscall"
 )
 
 func main() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
 	w, err := worker.New()
 	if err != nil {
 		log.Fatal(err)
