@@ -5,11 +5,13 @@ package encoder
 #include <libavcodec/avcodec.h>
 */
 import "C"
-import "cloud_gaming/pkg/format"
+import (
+	"cloud_gaming/pkg/ffmpeg/video"
+)
 
 type (
 	IVideoEncoder interface {
-		Encode(format.IVideoFormat, int) error
+		Encode(*video.AVFrame, int) error
 		GetEncodedData() ([]byte, bool)
 		Close() error
 	}

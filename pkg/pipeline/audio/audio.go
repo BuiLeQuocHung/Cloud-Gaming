@@ -1,8 +1,8 @@
-package pipeline
+package audio
 
 import (
 	"cloud_gaming/pkg/encoder"
-	"cloud_gaming/pkg/format"
+	"cloud_gaming/pkg/ffmpeg/audio"
 	"cloud_gaming/pkg/libretro"
 	"cloud_gaming/pkg/log"
 	"sync"
@@ -27,7 +27,7 @@ type (
 
 	AudioPacket struct {
 		Buffer   []byte             `json:"buffer"`
-		Format   format.AudioFormat `json:"format"`
+		Format   audio.AudioFormat  `json:"format"`
 		Codec    encoder.AudioCodec `json:"codec"`
 		Duration float64            `json:"duration"` // in milliseconds
 	}
@@ -93,7 +93,7 @@ func (a *AudioPipeline) Process(data []int16, frames int32) {
 
 			a.SendAudioPacket(&AudioPacket{
 				Buffer:   buf,
-				Format:   format.PCM,
+				Format:   audio.PCM,
 				Codec:    encoder.OPUS,
 				Duration: 10,
 			})

@@ -20,7 +20,6 @@ import "C"
 
 import (
 	"cloud_gaming/pkg/ffmpeg/video"
-	"cloud_gaming/pkg/format"
 	"cloud_gaming/pkg/log"
 	"cloud_gaming/pkg/utils"
 	"fmt"
@@ -58,7 +57,7 @@ func NewVP9Encoder(width, height, fps int) (IVideoEncoder, error) {
 	codecCtx.width = C.int(width)
 	codecCtx.height = C.int(height)
 	codecCtx.time_base = C.AVRational{num: 1, den: C.int(fps)}
-	codecCtx.pix_fmt = int32(format.YUV420)
+	codecCtx.pix_fmt = int32(video.YUV420)
 	codecCtx.gop_size = C.int(fps)
 
 	if ret := C.avcodec_open2(codecCtx, codec, nil); ret < 0 {
@@ -82,7 +81,7 @@ func (e *VP9Encoder) init() {
 }
 
 // Encode encodes YUV data to VP9
-func (e *VP9Encoder) Encode(videoFrame format.IVideoFormat, fps int) error {
+func (e *VP9Encoder) Encode(videoFrame *video.AVFrame, fps int) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -90,10 +89,7 @@ func (e *VP9Encoder) Encode(videoFrame format.IVideoFormat, fps int) error {
 		return nil
 	}
 
-	var frame *video.AVFrame = videoFrame.GetFrame()
-	defer frame.Close()
-
-	if ret := C.avcodec_send_frame(e.codecCtx, (*C.AVFrame)(unsafe.Pointer(frame))); ret < 0 {
+	if ret := C.avcodec_send_frame(e.codecCtx, (*C.AVFrame)(unsafe.Pointer(videoFrame))); ret < 0 {
 		return fmt.Errorf("error sending frame for encoding: %w", utils.CErrorToString(int(ret)))
 	}
 

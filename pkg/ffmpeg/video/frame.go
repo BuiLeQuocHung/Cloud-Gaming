@@ -47,6 +47,15 @@ func (f *AVFrame) GetLinesize() unsafe.Pointer {
 	return unsafe.Pointer(&f.linesize[0])
 }
 
+func (f *AVFrame) SetLinesize(linesize [8]int) {
+	var arr [8]C.int = [8]C.int{}
+	for i := 0; i < 8; i++ {
+		arr[i] = C.int(linesize[i])
+	}
+
+	f.linesize = arr
+}
+
 func (f *AVFrame) Close() {
 	C.av_frame_free(&f)
 }

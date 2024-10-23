@@ -1,8 +1,8 @@
-package pipeline
+package video
 
 import (
 	"cloud_gaming/pkg/encoder"
-	"cloud_gaming/pkg/format"
+	"cloud_gaming/pkg/ffmpeg/video"
 	"cloud_gaming/pkg/libretro"
 	"cloud_gaming/pkg/log"
 	"sync"
@@ -13,12 +13,16 @@ import (
 
 type (
 	VideoPipeline struct {
+		swsManager *SwsCtxManager
+		converter  *Converter
+
 		// pixelFmt, angle will be set by coreEnvironment once the core is loaded
 		// will be consistent through core's lifetime
 		pixelFmt *PixelFmt
-		angle    format.Angle
-		height   int
-		width    int
+		angle    int
+
+		height int
+		width  int
 
 		// fps will be set once game is loaded
 		fps float64
@@ -37,7 +41,7 @@ type (
 	VideoFrame struct {
 		Data     []byte             `json:"data"`
 		Codec    encoder.VideoCodec `json:"codec"`
-		Format   format.VideoFormat `json:"format"`
+		Format   video.VideoFormat  `json:"format"`
 		Width    int                `json:"width"`
 		Height   int                `json:"height"`
 		Duration float64            // in seconds
@@ -48,6 +52,8 @@ type (
 
 func NewVideoPipeline(sendVideoFrame SendVideoFrameFunc) (*VideoPipeline, error) {
 	v := &VideoPipeline{
+		swsManager:     NewSwsCtxManager(),
+		converter:      NewConverter(),
 		sendVideoFrame: sendVideoFrame,
 		width:          256,
 		height:         240,
@@ -99,45 +105,47 @@ func (v *VideoPipeline) SetPixelFormat(data unsafe.Pointer) {
 }
 
 func (v *VideoPipeline) SetRotation(data unsafe.Pointer) {
-	v.angle = format.Angle(int(uintptr(data)) % 4)
+	v.angle = int(uintptr(data)) % 4
 }
 
 func (v *VideoPipeline) Process(data []byte, width, height, pitch int32) {
 	var (
-		frameFmt format.IVideoFormat
+		rgbFrame *video.AVFrame
 		err      error
 	)
 
 	switch v.pixelFmt.format {
 	// RGB
 	case libretro.PixelFormat0RGB1555:
-		frameFmt, err = format.ConvertRGBtoYUV420(data, int(width), int(height), int(pitch))
+		rgbFrame, err = v.converter.ToFrame(data, int(width), int(height), int(pitch), video.RGB)
 	// RGB
 	case libretro.PixelFormatRGB565:
-		frameFmt, err = format.ConvertRGBtoYUV420(data, int(width), int(height), int(pitch))
+		rgbFrame, err = v.converter.ToFrame(data, int(width), int(height), int(pitch), video.RGB)
 	// RGBA
 	case libretro.PixelFormatXRGB8888:
-		frameFmt, err = format.ConvertRGBAtoYUV420(data, int(width), int(height), int(pitch))
+		rgbFrame, err = v.converter.ToFrame(data, int(width), int(height), int(pitch), video.RGBA)
 	}
 
 	if err != nil {
 		log.Error("convert error", zap.Error(err))
 		return
 	}
+	defer rgbFrame.Close()
 
-	frameFmt, err = frameFmt.Resize(v.height, v.width)
+	frame, err := v.converter.ConvertAndResize(v.swsManager, rgbFrame, v.width, v.height, video.YUV420)
 	if err != nil {
-		log.Error("resize error", zap.Error(err))
+		log.Error("convert and resize error", zap.Error(err))
 		return
 	}
+	defer frame.Close()
 
-	if v.angle != format.ANGLE0 {
-		frameFmt, err = frameFmt.Rotate(v.angle)
-		if err != nil {
-			log.Error("video pipeline: rotate image error", zap.Error(err))
-			return
-		}
-	}
+	// if v.angle != format.ANGLE0 {
+	// 	frameFmt, err = frameFmt.Rotate(v.angle)
+	// 	if err != nil {
+	// 		log.Error("video pipeline: rotate image error", zap.Error(err))
+	// 		return
+	// 	}
+	// }
 
 	v.mu.Lock()
 	defer v.mu.Unlock()
@@ -146,11 +154,12 @@ func (v *VideoPipeline) Process(data []byte, width, height, pitch int32) {
 		return
 	}
 
-	err = v.enc.Encode(frameFmt, int(v.fps))
+	err = v.enc.Encode(frame, int(v.fps))
 	if err != nil {
 		log.Error("encode vp9 error", zap.Error(err))
 		return
 	}
+
 }
 
 func (v *VideoPipeline) getEncodedDataAndSendFrame() {
@@ -175,7 +184,7 @@ func (v *VideoPipeline) getEncodedDataAndSendFrame() {
 		v.sendVideoFrame(&VideoFrame{
 			Data:     data,
 			Codec:    encoder.VP9,
-			Format:   format.YUV420,
+			Format:   video.YUV420,
 			Width:    v.width,
 			Height:   v.height,
 			Duration: 1 / v.fps * 1000,
@@ -193,9 +202,9 @@ func (v *VideoPipeline) Close() error {
 	v.enc = nil
 
 	v.pixelFmt = nil
-	v.angle = format.ANGLE0
+	v.angle = 0
 	v.fps = 0
 
-	format.FmtCtx.Reset()
+	v.swsManager.Reset()
 	return nil
 }

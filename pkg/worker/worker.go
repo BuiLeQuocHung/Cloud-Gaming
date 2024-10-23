@@ -4,7 +4,9 @@ import (
 	"cloud_gaming/pkg/emulator"
 	"cloud_gaming/pkg/log"
 	"cloud_gaming/pkg/message"
-	"cloud_gaming/pkg/pipeline"
+	"cloud_gaming/pkg/pipeline/audio"
+	"cloud_gaming/pkg/pipeline/video"
+
 	"cloud_gaming/pkg/storage"
 	_webrtc "cloud_gaming/pkg/webrtc"
 	_websocket "cloud_gaming/pkg/websocket"
@@ -23,8 +25,8 @@ type (
 		coordinatorConn *_websocket.Conn
 		peerConn        *_webrtc.PeerConnection
 		emulator        *emulator.Emulator
-		videoPipe       *pipeline.VideoPipeline
-		audioPipe       *pipeline.AudioPipeline
+		videoPipe       *video.VideoPipeline
+		audioPipe       *audio.AudioPipeline
 		storage         *storage.Storage
 	}
 )
@@ -36,11 +38,11 @@ func New() (*Worker, error) {
 		storage:  storage.New(),
 	}
 
-	w.videoPipe, err = pipeline.NewVideoPipeline(w.sendVideoFrame())
+	w.videoPipe, err = video.NewVideoPipeline(w.sendVideoFrame())
 	if err != nil {
 		return nil, err
 	}
-	w.audioPipe = pipeline.NewAudioPipeline(w.sendAudioPacket())
+	w.audioPipe = audio.NewAudioPipeline(w.sendAudioPacket())
 	return w, nil
 }
 

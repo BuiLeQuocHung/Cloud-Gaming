@@ -1,40 +1,37 @@
-package format
+package video
 
 /*
 #cgo pkg-config: libswscale
 #include <libswscale/swscale.h>
 */
 import "C"
+import "cloud_gaming/pkg/ffmpeg/video"
 
 type (
-	CtxKey struct {
+	SwsCtxKey struct {
 		from_width  int
 		from_height int
-		from        VideoFormat
+		from        video.VideoFormat
 
 		width  int
 		height int
-		to     VideoFormat
+		to     video.VideoFormat
 
 		scalingAlgo int
 	}
 
-	Context struct {
-		ctxMap map[CtxKey]*C.struct_SwsContext
+	SwsCtxManager struct {
+		ctxMap map[SwsCtxKey]*C.struct_SwsContext
 	}
 )
 
-var (
-	FmtCtx *Context = NewFormatCtx()
-)
-
-func NewFormatCtx() *Context {
-	return &Context{
-		ctxMap: make(map[CtxKey]*C.struct_SwsContext),
+func NewSwsCtxManager() *SwsCtxManager {
+	return &SwsCtxManager{
+		ctxMap: make(map[SwsCtxKey]*C.struct_SwsContext),
 	}
 }
 
-func (c *Context) Get(k CtxKey) *C.struct_SwsContext {
+func (c *SwsCtxManager) Get(k SwsCtxKey) *C.struct_SwsContext {
 	if ctx, ok := c.ctxMap[k]; ok {
 		return ctx
 	}
@@ -47,10 +44,10 @@ func (c *Context) Get(k CtxKey) *C.struct_SwsContext {
 	return c.ctxMap[k]
 }
 
-func (c *Context) Reset() {
+func (c *SwsCtxManager) Reset() {
 	for _, v := range c.ctxMap {
 		C.sws_freeContext(v)
 	}
 
-	c.ctxMap = make(map[CtxKey]*C.struct_SwsContext)
+	c.ctxMap = make(map[SwsCtxKey]*C.struct_SwsContext)
 }

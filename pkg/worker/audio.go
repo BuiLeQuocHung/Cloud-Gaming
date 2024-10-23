@@ -1,14 +1,14 @@
 package worker
 
 import (
-	"cloud_gaming/pkg/pipeline"
+	"cloud_gaming/pkg/pipeline/audio"
 	"time"
 
 	"github.com/pion/webrtc/v3/pkg/media"
 )
 
-func (w *Worker) sendAudioPacket() pipeline.SendAudioPacketFunc {
-	return func(audioPacket *pipeline.AudioPacket) {
+func (w *Worker) sendAudioPacket() audio.SendAudioPacketFunc {
+	return func(audioPacket *audio.AudioPacket) {
 		w.peerConn.SendAudioFrame(media.Sample{
 			Data:     audioPacket.Buffer,
 			Duration: time.Duration(audioPacket.Duration) * time.Millisecond,
