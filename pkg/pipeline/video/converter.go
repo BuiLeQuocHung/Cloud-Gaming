@@ -52,25 +52,14 @@ func (c *Converter) ToFrame(data []byte, width, height, pitch int, format video.
 	return frame, nil
 }
 
-func (c *Converter) ConvertAndResize(swsCtxManager *SwsCtxManager, curFrame *video.AVFrame, targetWidth, targetHeight int, targetFormat video.VideoFormat) (*video.AVFrame, error) {
-	swsCtx := swsCtxManager.Get(
-		SwsCtxKey{
-			from_width:  curFrame.GetWidth(),
-			from_height: curFrame.GetHeight(),
-			from:        video.VideoFormat(curFrame.GetFormat()),
-
-			width:  targetWidth,
-			height: targetHeight,
-			to:     targetFormat,
-
-			scalingAlgo: C.SWS_BILINEAR,
-		},
-	)
+func (c *Converter) ConvertAndResize(swsCtxManager *SwsCtxManager, srcFrame *video.AVFrame, targetWidth, targetHeight int, targetFormat video.VideoFormat) (*video.AVFrame, error) {
+	curData := (**C.uchar)(srcFrame.GetData())
+	curLinesize := (*C.int)(srcFrame.GetLinesize())
 
 	// Allocate frame
 	frame := video.NewFrame()
 	if frame == nil {
-		return nil, errors.New("ConvertAndResize: failed to allocate frame")
+		return frame, errors.New("ConvertAndResize: failed to allocate frame")
 	}
 
 	frame.SetWidth(targetWidth)
@@ -88,15 +77,29 @@ func (c *Converter) ConvertAndResize(swsCtxManager *SwsCtxManager, curFrame *vid
 	frameData := (**C.uchar)(frame.GetData())
 	frameLinesize := (*C.int)(frame.GetLinesize())
 	if ret := C.av_image_fill_arrays(frameData, frameLinesize, (*C.uint8_t)(buffer), int32(targetFormat), C.int(targetWidth), C.int(targetHeight), 1); ret < 0 {
+		frame.Close()
 		return nil, fmt.Errorf("ConvertAndResize: attach buffer failed: %w", utils.CErrorToString(int(ret)))
 	}
 
-	curData := (**C.uchar)(curFrame.GetData())
-	curLinesize := (*C.int)(curFrame.GetLinesize())
+	swsCtxKey := &SwsCtxKey{
+		from_width:  srcFrame.GetWidth(),
+		from_height: srcFrame.GetHeight(),
+		from:        video.VideoFormat(srcFrame.GetFormat()),
+
+		width:  targetWidth,
+		height: targetHeight,
+		to:     targetFormat,
+
+		scalingAlgo: C.SWS_BILINEAR,
+	}
+
+	swsCtx := swsCtxManager.Get(swsCtxKey)
+	defer swsCtxManager.Set(swsCtxKey, swsCtx)
 
 	// Converting
-	if ret := C.sws_scale(swsCtx, curData, curLinesize, 0, C.int(curFrame.GetHeight()), frameData, frameLinesize); ret != C.int(targetHeight) {
-		return nil, fmt.Errorf("ConvertAndResize: num of rows copied is not equal to height")
+	if ret := C.sws_scale(swsCtx, curData, curLinesize, 0, C.int(srcFrame.GetHeight()), frameData, frameLinesize); ret != C.int(targetHeight) {
+		frame.Close()
+		return nil, fmt.Errorf("ConvertAndResize: num of rows copied is not equal to height: %w", utils.CErrorToString(int(ret)))
 	}
 
 	return frame, nil

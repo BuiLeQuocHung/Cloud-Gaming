@@ -139,7 +139,6 @@ func (e *Emulator) UnloadGame() {
 func (e *Emulator) Run() {
 	curTime := time.Now()
 	delta := time.Second / time.Duration(e.systemInfo.Timing.FPS)
-
 	if time.Since((e.lastTime)) >= delta {
 		e.core.Run()
 		e.lastTime = curTime
@@ -185,7 +184,7 @@ func (e *Emulator) IsReady() bool {
 	return e.state == Ready
 }
 
-func (e *Emulator) GetState(newState EmulatorState) EmulatorState {
+func (e *Emulator) GetState() EmulatorState {
 	return e.state
 }
 
