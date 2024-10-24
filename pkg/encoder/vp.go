@@ -2,9 +2,9 @@ package encoder
 
 /*
 #cgo pkg-config: libavutil libavcodec libavformat libswscale libdrm liblzma libswresample vpx x264
-// #cgo LDFLAGS: -L../../external -lvpx -lm -ldl
 #include <libswscale/swscale.h>
 #include <libavcodec/avcodec.h>
+#include <libavutil/opt.h>
 #include <libavutil/avutil.h>
 #include <libavutil/imgutils.h>
 #include <libavutil/error.h>
@@ -53,13 +53,40 @@ func NewVP9Encoder(width, height, fps int) (IVideoEncoder, error) {
 		return nil, fmt.Errorf("could not allocate codec context")
 	}
 
-	codecCtx.bit_rate = C.long(1500000)
+	codecCtx.bit_rate = C.long(400000)
+	codecCtx.rc_max_rate = 600 * 1000 // 2 Mbps maximum bitrate
+	codecCtx.rc_min_rate = 200 * 1000 // 500 Kbps minimum bitrate
+
 	codecCtx.width = C.int(width)
 	codecCtx.height = C.int(height)
+
 	codecCtx.time_base = C.AVRational{num: 1, den: C.int(fps)}
 	codecCtx.pix_fmt = int32(video.YUV420)
-	codecCtx.gop_size = C.int(fps) / 4
-	codecCtx.thread_count = 8
+	codecCtx.gop_size = C.int(fps) / 2
+	codecCtx.max_b_frames = 0
+
+	codecCtx.thread_count = 16
+	codecCtx.thread_type = C.FF_THREAD_FRAME
+
+	codecCtx.skip_frame = C.AVDISCARD_NONREF
+
+	crf_s := C.CString("crf")
+	defer C.free(unsafe.Pointer(crf_s))
+	crf_val_s := C.CString("23") // 0-63 bigger means smaller size but lower quality
+	defer C.free(unsafe.Pointer(crf_val_s))
+	C.av_opt_set(codecCtx.priv_data, crf_s, crf_val_s, 0)
+
+	cpu_s := C.CString("cpu-used")
+	defer C.free(unsafe.Pointer(cpu_s))
+	cpu_val_s := C.CString("4") // 0-8 bigger means higher speed but lower quality and compression
+	defer C.free(unsafe.Pointer(cpu_val_s))
+	C.av_opt_set(codecCtx.priv_data, cpu_s, cpu_val_s, 0)
+
+	preset_s := C.CString("preset")
+	defer C.free(unsafe.Pointer(preset_s))
+	preset_val_s := C.CString("faster")
+	defer C.free(unsafe.Pointer(preset_val_s))
+	C.av_opt_set(codecCtx.priv_data, preset_s, preset_val_s, 0)
 
 	if ret := C.avcodec_open2(codecCtx, codec, nil); ret < 0 {
 		return nil, fmt.Errorf("could not open codec: %w", utils.CErrorToString(int(ret)))

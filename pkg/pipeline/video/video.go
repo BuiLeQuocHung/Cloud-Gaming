@@ -55,8 +55,8 @@ func NewVideoPipeline(sendVideoFrame SendVideoFrameFunc) (*VideoPipeline, error)
 		swsManager:     NewSwsCtxManager(),
 		converter:      NewConverter(),
 		sendVideoFrame: sendVideoFrame,
-		width:          256,
-		height:         240,
+		width:          256 * 1.5,
+		height:         240 * 1.5,
 		enc:            nil,
 	}
 
@@ -118,10 +118,10 @@ func (v *VideoPipeline) Process(data []byte, width, height, pitch int32) {
 	// RGB
 	case libretro.PixelFormat0RGB1555:
 		rgbFrame, err = v.converter.ToFrame(data, int(width), int(height), int(pitch), video.RGB)
-	// RGB
+		// RGB
 	case libretro.PixelFormatRGB565:
 		rgbFrame, err = v.converter.ToFrame(data, int(width), int(height), int(pitch), video.RGB)
-	// RGBA
+		// RGBA
 	case libretro.PixelFormatXRGB8888:
 		rgbFrame, err = v.converter.ToFrame(data, int(width), int(height), int(pitch), video.RGBA)
 	}
@@ -139,14 +139,6 @@ func (v *VideoPipeline) Process(data []byte, width, height, pitch int32) {
 	}
 	defer frame.Close()
 
-	// if v.angle != format.ANGLE0 {
-	// 	frameFmt, err = frameFmt.Rotate(v.angle)
-	// 	if err != nil {
-	// 		log.Error("video pipeline: rotate image error", zap.Error(err))
-	// 		return
-	// 	}
-	// }
-
 	v.mu.Lock()
 	defer v.mu.Unlock()
 	if v.enc == nil {
@@ -159,7 +151,6 @@ func (v *VideoPipeline) Process(data []byte, width, height, pitch int32) {
 		log.Error("encode vp9 error", zap.Error(err))
 		return
 	}
-
 }
 
 func (v *VideoPipeline) getEncodedDataAndSendFrame() {
