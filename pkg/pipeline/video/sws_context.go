@@ -11,43 +11,41 @@ type (
 	SwsCtxKey struct {
 		from_width  int
 		from_height int
-		from        video.VideoFormat
+		from_format video.VideoFormat
 
-		width  int
-		height int
-		to     video.VideoFormat
+		to_width  int
+		to_height int
+		to_format video.VideoFormat
 
 		scalingAlgo int
 	}
 
 	SwsCtxManager struct {
-		ctxMap map[SwsCtxKey]chan *C.struct_SwsContext
+		ctxMap map[SwsCtxKey]chan *video.SwsContext
 	}
 )
 
 func NewSwsCtxManager() *SwsCtxManager {
 	return &SwsCtxManager{
-		ctxMap: make(map[SwsCtxKey]chan *C.struct_SwsContext),
+		ctxMap: make(map[SwsCtxKey]chan *video.SwsContext),
 	}
 }
 
-func (c *SwsCtxManager) Get(k *SwsCtxKey) *C.struct_SwsContext {
+func (c *SwsCtxManager) Get(k *SwsCtxKey) *video.SwsContext {
 	channel, ok := c.ctxMap[*k]
 	if !ok {
-		c.ctxMap[*k] = make(chan *C.struct_SwsContext, 100)
+		c.ctxMap[*k] = make(chan *video.SwsContext, 100)
 	}
 
 	if len(channel) == 0 {
-		c.ctxMap[*k] <- C.sws_getContext(
-			C.int(k.from_width), C.int(k.from_height), int32(k.from),
-			C.int(k.width), C.int(k.height), int32(k.to),
-			C.int(k.scalingAlgo), nil, nil, nil)
+		c.ctxMap[*k] <- video.NewSwsCtx(k.from_width, k.from_height, k.to_width,
+			k.to_height, k.from_format, k.to_format, k.scalingAlgo)
 	}
 
 	return <-c.ctxMap[*k]
 }
 
-func (c *SwsCtxManager) Set(k *SwsCtxKey, swsCtx *C.struct_SwsContext) {
+func (c *SwsCtxManager) Set(k *SwsCtxKey, swsCtx *video.SwsContext) {
 	_, ok := c.ctxMap[*k]
 	if !ok {
 		return
@@ -57,11 +55,11 @@ func (c *SwsCtxManager) Set(k *SwsCtxKey, swsCtx *C.struct_SwsContext) {
 }
 
 func (c *SwsCtxManager) Reset() {
-	for k, _ := range c.ctxMap {
-		for len(c.ctxMap[k]) > 0 {
-			C.sws_freeContext(<-c.ctxMap[k])
+	for _, channel := range c.ctxMap {
+		for len(channel) > 0 {
+			(<-channel).Free()
 		}
 	}
 
-	c.ctxMap = make(map[SwsCtxKey]chan *C.struct_SwsContext)
+	c.ctxMap = make(map[SwsCtxKey]chan *video.SwsContext)
 }

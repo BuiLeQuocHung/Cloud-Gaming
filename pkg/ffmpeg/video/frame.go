@@ -3,9 +3,13 @@ package video
 /*
 #cgo pkg-config: libavutil
 #include <libavutil/frame.h>
+#include <libavutil/imgutils.h>
 */
 import "C"
-import "unsafe"
+import (
+	"errors"
+	"unsafe"
+)
 
 type (
 	AVFrame = C.AVFrame
@@ -13,6 +17,56 @@ type (
 
 func NewFrame() *AVFrame {
 	return C.av_frame_alloc()
+}
+
+func NewFrameWithBuffer(width, height int, format VideoFormat) (*AVFrame, error) {
+	frame := NewFrame()
+	if frame == nil {
+		return nil, errors.New("create new frame failed: frame is nil")
+	}
+
+	frame.SetWidth(width)
+	frame.SetHeight(height)
+	frame.SetFormat(int(format))
+
+	numBytes := C.av_image_get_buffer_size(int32(format), C.int(width), C.int(height), 1)
+	buffer := C.av_malloc(C.size_t(numBytes))
+	if buffer == nil {
+		frame.Close()
+		return nil, errors.New("allocate buffer failed: buffer is nil")
+	}
+
+	frameData := (**C.uchar)(frame.GetData())
+	frameLinesize := (*C.int)(frame.GetLinesize())
+	if ret := C.av_image_fill_arrays(frameData, frameLinesize, (*C.uint8_t)(buffer), int32(format), C.int(width), C.int(height), 1); ret < 0 {
+		frame.Close()
+		return nil, errors.New("attach buffer to frame failed")
+	}
+
+	return frame, nil
+}
+
+func NewFrameWithBufferAsArray(width, height int, format VideoFormat, data []byte) (*AVFrame, error) {
+	frame := NewFrame()
+	if frame == nil {
+		return nil, errors.New("create new frame failed: frame is nil")
+	}
+
+	frame.SetWidth(width)
+	frame.SetHeight(height)
+	frame.SetFormat(int(format))
+
+	frameData := (**C.uchar)(frame.GetData())
+	frameLinesize := (*C.int)(frame.GetLinesize())
+
+	if ret := C.av_image_fill_arrays(
+		frameData, frameLinesize, (*C.uint8_t)(unsafe.Pointer(&data[0])),
+		C.AV_PIX_FMT_RGB24, C.int(width), C.int(height), 1); ret < 0 {
+		frame.Close()
+		return nil, errors.New("attach buffer to frame failed")
+	}
+
+	return frame, nil
 }
 
 func (f *AVFrame) GetWidth() int {
