@@ -29,18 +29,9 @@ func NewFrameWithBuffer(width, height int, format VideoFormat) (*AVFrame, error)
 	frame.SetHeight(height)
 	frame.SetFormat(int(format))
 
-	numBytes := C.av_image_get_buffer_size(int32(format), C.int(width), C.int(height), 1)
-	buffer := C.av_malloc(C.size_t(numBytes))
-	if buffer == nil {
+	if ret := C.av_frame_get_buffer(frame, 0); ret < 0 {
 		frame.Close()
-		return nil, errors.New("allocate buffer failed: buffer is nil")
-	}
-
-	frameData := (**C.uchar)(frame.GetData())
-	frameLinesize := (*C.int)(frame.GetLinesize())
-	if ret := C.av_image_fill_arrays(frameData, frameLinesize, (*C.uint8_t)(buffer), int32(format), C.int(width), C.int(height), 1); ret < 0 {
-		frame.Close()
-		return nil, errors.New("attach buffer to frame failed")
+		return nil, errors.New("allocate buffer failed")
 	}
 
 	return frame, nil

@@ -5,7 +5,6 @@ import (
 	"cloud_gaming/pkg/ffmpeg/audio"
 	"cloud_gaming/pkg/libretro"
 	"cloud_gaming/pkg/log"
-	"sync"
 
 	"go.uber.org/zap"
 )
@@ -22,7 +21,6 @@ type (
 		sendAudioPacket SendAudioPacketFunc
 
 		enc encoder.IAudioEncoder
-		mu  sync.Mutex
 	}
 
 	AudioPacket struct {
@@ -43,13 +41,12 @@ func NewAudioPipeline(sendAudioPacket SendAudioPacketFunc) *AudioPipeline {
 	}
 }
 
-func (a *AudioPipeline) init() {
-	opusEncoder, err := encoder.NewOpusEncoder(a.sampleRate, a.channel)
-	if err != nil {
-		log.Error("opus init failed", zap.Error(err))
-		return
+func (a *AudioPipeline) createEncoder() error {
+	var err error
+	if a.enc, err = encoder.NewOpusEncoder(a.sampleRate, a.channel); err != nil {
+		return err
 	}
-	a.enc = opusEncoder
+	return nil
 }
 
 func (a *AudioPipeline) SetSystemAudioInfo(systemAVInfo *libretro.SystemAVInfo) {
@@ -64,21 +61,17 @@ func (a *AudioPipeline) SetSystemAudioInfo(systemAVInfo *libretro.SystemAVInfo) 
 	a.buffer = buffer
 	a.maxLen = int(maxLen)
 	a.sampleRate = int(sampleRate)
-
-	a.init()
 }
 
 func (a *AudioPipeline) Process(data []int16, frames int32) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
 	if a.enc == nil {
-		log.Error("encoder is nil")
-		return
+		if err := a.createEncoder(); err != nil {
+			log.Error("encoder is nil", zap.Error(err))
+			return
+		}
 	}
 
 	dataOffset := 0
-
 	for dataOffset < len(data) {
 		writtenLen := min(a.maxLen-a.offset, len(data)-dataOffset)
 		a.write(data, dataOffset, writtenLen)
@@ -91,7 +84,7 @@ func (a *AudioPipeline) Process(data []int16, frames int32) {
 				return
 			}
 
-			a.SendAudioPacket(&AudioPacket{
+			a._sendAudioPacket(&AudioPacket{
 				Buffer:   buf,
 				Format:   audio.PCM,
 				Codec:    encoder.OPUS,
@@ -110,22 +103,11 @@ func (a *AudioPipeline) write(data []int16, from int, length int) {
 	a.offset += length
 }
 
-func (a *AudioPipeline) SendAudioPacket(packet *AudioPacket) {
+func (a *AudioPipeline) _sendAudioPacket(packet *AudioPacket) {
 	a.sendAudioPacket(packet)
 	a.offset = 0
 }
 
 func (a *AudioPipeline) Close() error {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
-	a.buffer = nil
-	a.maxLen = 0
-	a.offset = 0
-	a.sampleRate = 0
-
-	a.enc.Close()
-	a.enc = nil
-
-	return nil
+	return a.enc.Close()
 }

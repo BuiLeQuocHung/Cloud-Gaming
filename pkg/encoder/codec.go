@@ -12,7 +12,7 @@ import (
 type (
 	IVideoEncoder interface {
 		Encode(*video.AVFrame, int) error
-		GetEncodedData() ([]byte, bool)
+		GetEncodedData() ([]byte, error)
 		Close() error
 	}
 

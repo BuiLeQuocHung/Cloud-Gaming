@@ -5,7 +5,6 @@ import (
 	"cloud_gaming/pkg/ffmpeg/video"
 	"cloud_gaming/pkg/libretro"
 	"cloud_gaming/pkg/log"
-	"sync"
 	"unsafe"
 
 	"go.uber.org/zap"
@@ -30,7 +29,6 @@ type (
 		sendVideoFrame SendVideoFrameFunc
 
 		enc encoder.IVideoEncoder
-		mu  sync.Mutex
 	}
 
 	PixelFmt struct {
@@ -57,28 +55,18 @@ func NewVideoPipeline(sendVideoFrame SendVideoFrameFunc) (*VideoPipeline, error)
 		sendVideoFrame: sendVideoFrame,
 		width:          256 * 1.5,
 		height:         240 * 1.5,
-		enc:            nil,
 	}
 
 	return v, nil
 }
 
-func (v *VideoPipeline) init() {
+func (v *VideoPipeline) Start() {
+	v.createEncoder()
 	go v.getEncodedDataAndSendFrame()
 }
 
 func (v *VideoPipeline) SetSystemVideoInfo(systemAVInfo *libretro.SystemAVInfo) {
 	v.fps = systemAVInfo.Timing.FPS
-	v.createEncoder()
-	v.init()
-}
-
-func (v *VideoPipeline) createEncoder() {
-	enc, err := encoder.NewVP9Encoder(v.width, v.height, int(v.fps))
-	if err != nil {
-		log.Debug("create encoder in video pipeline failed", zap.Error(err))
-	}
-	v.enc = enc
 }
 
 func (v *VideoPipeline) SetPixelFormat(data unsafe.Pointer) {
@@ -127,44 +115,37 @@ func (v *VideoPipeline) Process(data []byte, width, height, pitch int32) {
 	}
 
 	if err != nil {
-		log.Error("convert error", zap.Error(err))
+		log.Error("convert failed", zap.Error(err))
 		return
 	}
 	defer rgbFrame.Close()
 
 	frame, err := v.converter.ConvertAndResize(v.swsManager, rgbFrame, v.width, v.height, video.YUV420)
 	if err != nil {
-		log.Error("convert and resize error", zap.Error(err))
+		log.Error("convert and resize failed", zap.Error(err))
 		return
 	}
 	defer frame.Close()
 
-	v.mu.Lock()
-	defer v.mu.Unlock()
 	if v.enc == nil {
-		log.Error("encoder is nil")
 		return
 	}
 
 	err = v.enc.Encode(frame, int(v.fps))
 	if err != nil {
-		log.Error("encode vp9 error", zap.Error(err))
+		log.Error("encode failed", zap.Error(err))
 		return
 	}
 }
 
 func (v *VideoPipeline) getEncodedDataAndSendFrame() {
 	for {
-		v.mu.Lock()
 		if v.enc == nil {
-			v.mu.Unlock()
 			break
 		}
 
-		data, isOpen := v.enc.GetEncodedData()
-		v.mu.Unlock()
-
-		if !isOpen {
+		data, err := v.enc.GetEncodedData()
+		if err != nil {
 			break
 		}
 
@@ -185,17 +166,20 @@ func (v *VideoPipeline) getEncodedDataAndSendFrame() {
 	log.Debug("getEncodedDataAndSendFrame has stopped")
 }
 
-func (v *VideoPipeline) Close() error {
-	v.mu.Lock()
-	defer v.mu.Unlock()
+func (v *VideoPipeline) createEncoder() error {
+	var err error
+	if v.enc, err = encoder.NewVP9Encoder(v.width, v.height, int(v.fps)); err != nil {
+		return err
+	}
+	return nil
+}
 
+func (v *VideoPipeline) Close() error {
 	v.enc.Close()
 	v.enc = nil
 
 	v.pixelFmt = nil
-	v.angle = 0
-	v.fps = 0
-
 	v.swsManager.Reset()
+
 	return nil
 }

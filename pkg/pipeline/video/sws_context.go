@@ -5,7 +5,9 @@ package video
 #include <libswscale/swscale.h>
 */
 import "C"
-import "cloud_gaming/pkg/ffmpeg/video"
+import (
+	"cloud_gaming/pkg/ffmpeg/video"
+)
 
 type (
 	SwsCtxKey struct {

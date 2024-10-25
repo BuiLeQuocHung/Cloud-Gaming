@@ -53,13 +53,14 @@ func (w *Worker) startEmulator(r *StartGameRequest) error {
 		return err
 	}
 
-	// init video/audio pipeline here because
-	// some infos can only be retrieved after core and game are loaded
 	systemAVInfo := w.emulator.GetSystemAVInfo()
 	w.setSystemAVInfo(&systemAVInfo)
 
+	w.videoPipe.Start()
+
 	log.Debug("system av info", zap.Any("info", systemAVInfo))
 	log.Debug("start game", zap.String("game", r.Game))
+
 	go w.startGame()
 	return nil
 }
