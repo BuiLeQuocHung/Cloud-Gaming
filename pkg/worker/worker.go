@@ -48,7 +48,7 @@ func New() (*Worker, error) {
 
 func (w *Worker) Run() {
 	w.initWebSocketConnToCoordinator()
-	w.InitWebrtcFactory()
+	w.initWebrtcFactory()
 
 	go w.requestHandler()
 }
@@ -173,7 +173,7 @@ func (w *Worker) sendError(label message.MsgType, text string) {
 	w.coordinatorConn.WriteJSON(resp)
 }
 
-func (w *Worker) InitWebrtcFactory() {
+func (w *Worker) initWebrtcFactory() {
 	factory, err := _webrtc.NewFactory()
 	if err != nil {
 		log.Fatal("init webrtc factory failed", zap.Error(err))
@@ -182,7 +182,7 @@ func (w *Worker) InitWebrtcFactory() {
 	w.webrtcFactory = factory
 }
 
-func (w *Worker) CallbackWebRTCDisconnected() {
+func (w *Worker) callbackWebRTCDisconnected() {
 	var err error
 
 	w.stopEmulator()
@@ -197,5 +197,5 @@ func (w *Worker) resetWebRTC() (*_webrtc.PeerConnection, error) {
 		w.peerConn.Close()
 	}
 
-	return _webrtc.NewPeerConnection(w.coordinatorConn, w.webrtcFactory, w.CallbackWebRTCDisconnected)
+	return _webrtc.NewPeerConnection(w.coordinatorConn, w.webrtcFactory, w.callbackWebRTCDisconnected)
 }

@@ -1,8 +1,6 @@
 # syntax=docker/dockerfile:1
 FROM golang:1.23
 
-ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/lib/pkgconfig
-
 WORKDIR /worker
 COPY go.mod go.sum ./
 RUN go mod download
@@ -12,21 +10,13 @@ RUN go mod tidy
 RUN apt-get update && \
     apt-get install -y \
         pkg-config \
-        cmake \
-        ffmpeg \
-        libavformat-dev \
         libavcodec-dev \
         libavutil-dev \
-        libavfilter-dev \
-        libopusfile-dev \
         libswscale-dev \
-        libswresample-dev \
         libc6-dev \
-        zlib1g-dev \
         libvpx-dev \
         libopus-dev \
-        libdrm-dev \
-        liblzma-dev \
+        libopusfile-dev \
         libx264-dev \
         build-essential \
     && apt-get clean \

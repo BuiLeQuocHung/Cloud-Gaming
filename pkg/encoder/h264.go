@@ -77,7 +77,9 @@ func (e *H264Encoder) Encode(videoFrame *video.AVFrame, fps int) error {
 		return nil
 	}
 
-	videoFrame.SetPTS(e.getFramePts())
+	// only need it to be strictly increasing, value does not matter
+	videoFrame.SetPTS(int64(e.totalFrames))
+	e.totalFrames += 1
 	return video.EncodeFrame(e.codecCtx, videoFrame)
 }
 
@@ -103,12 +105,12 @@ func (e *H264Encoder) GetEncodedData() ([]byte, error) {
 	return utils.PointerToSlice(pkt.GetData(), pkt.GetSize()), nil
 }
 
-// calculate current frame pts
-func (e *H264Encoder) getFramePts() int64 {
-	e.totalFrames += 1
-	time_base := e.codecCtx.GetTimebase()
-	return int64(float64(e.totalFrames*90000) * time_base.ToFloat())
-}
+// // calculate current frame pts
+// func (e *H264Encoder) getFramePts() int64 {
+// 	e.totalFrames += 1
+// 	time_base := e.codecCtx.GetTimebase()
+// 	return int64(float64(e.totalFrames*90000) * time_base.ToFloat())
+// }
 
 func (e *H264Encoder) stopping() {
 	e.isShuttingDown = true

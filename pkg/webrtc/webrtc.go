@@ -46,7 +46,7 @@ func NewPeerConnection(signalConn *_websocket.Conn, factory *Factory,
 
 		payload, err := json.Marshal(candidate.ToJSON())
 		if err != nil {
-			log.Error(" onicecandidate error", zap.Error(err))
+			log.Error("onicecandidate error", zap.Error(err))
 			payload = nil
 		}
 
