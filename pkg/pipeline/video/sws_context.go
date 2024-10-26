@@ -1,10 +1,5 @@
 package video
 
-/*
-#cgo pkg-config: libswscale
-#include <libswscale/swscale.h>
-*/
-import "C"
 import (
 	"cloud_gaming/pkg/ffmpeg/video"
 )
@@ -13,11 +8,11 @@ type (
 	SwsCtxKey struct {
 		from_width  int
 		from_height int
-		from_format video.VideoFormat
+		from_format video.PixelFormat
 
 		to_width  int
 		to_height int
-		to_format video.VideoFormat
+		to_format video.PixelFormat
 
 		scalingAlgo int
 	}

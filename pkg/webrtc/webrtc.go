@@ -85,7 +85,7 @@ func (pc *PeerConnection) addAVTrack() error {
 	)
 
 	videoTrack, err = webrtc.NewTrackLocalStaticSample(
-		webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeVP9},
+		webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeH264},
 		"video",
 		"video",
 	)

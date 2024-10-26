@@ -19,7 +19,7 @@ func NewFrame() *AVFrame {
 	return C.av_frame_alloc()
 }
 
-func NewFrameWithBuffer(width, height int, format VideoFormat) (*AVFrame, error) {
+func NewFrameWithBuffer(width, height int, format PixelFormat) (*AVFrame, error) {
 	frame := NewFrame()
 	if frame == nil {
 		return nil, errors.New("create new frame failed: frame is nil")
@@ -37,7 +37,7 @@ func NewFrameWithBuffer(width, height int, format VideoFormat) (*AVFrame, error)
 	return frame, nil
 }
 
-func NewFrameWithBufferAsArray(width, height int, format VideoFormat, data []byte) (*AVFrame, error) {
+func NewFrameWithBufferAsArray(width, height int, format PixelFormat, data []byte) (*AVFrame, error) {
 	frame := NewFrame()
 	if frame == nil {
 		return nil, errors.New("create new frame failed: frame is nil")
@@ -99,6 +99,14 @@ func (f *AVFrame) SetLinesize(linesize [8]int) {
 	}
 
 	f.linesize = arr
+}
+
+func (f *AVFrame) GetPTS() int64 {
+	return int64(f.pts)
+}
+
+func (f *AVFrame) SetPTS(pts int64) {
+	f.pts = C.long(pts)
 }
 
 func (f *AVFrame) Close() {

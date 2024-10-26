@@ -1,10 +1,5 @@
 package encoder
 
-/*
-#cgo pkg-config: libavcodec
-#include <libavcodec/avcodec.h>
-*/
-import "C"
 import (
 	"cloud_gaming/pkg/ffmpeg/video"
 )

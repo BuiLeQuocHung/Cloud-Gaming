@@ -16,3 +16,7 @@ func NewRational(num, den int) *Rational {
 		den: C.int(den),
 	}
 }
+
+func (r *Rational) ToFloat() float64 {
+	return float64(r.num) / float64(r.den)
+}

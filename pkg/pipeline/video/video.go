@@ -20,8 +20,10 @@ type (
 		pixelFmt *PixelFmt
 		angle    int
 
-		height int
-		width  int
+		height    int
+		width     int
+		codec     video.VideoCodec
+		pixFormat video.PixelFormat
 
 		// fps will be set once game is loaded
 		fps float64
@@ -39,7 +41,7 @@ type (
 	VideoFrame struct {
 		Data     []byte            `json:"data"`
 		Codec    video.VideoCodec  `json:"codec"`
-		Format   video.VideoFormat `json:"format"`
+		Format   video.PixelFormat `json:"format"`
 		Width    int               `json:"width"`
 		Height   int               `json:"height"`
 		Duration float64           // in seconds
@@ -55,6 +57,8 @@ func NewVideoPipeline(sendVideoFrame SendVideoFrameFunc) (*VideoPipeline, error)
 		sendVideoFrame: sendVideoFrame,
 		width:          256 * 1.5,
 		height:         240 * 1.5,
+		codec:          video.H264,
+		pixFormat:      video.YUV420,
 	}
 
 	return v, nil
@@ -146,6 +150,7 @@ func (v *VideoPipeline) getEncodedDataAndSendFrame() {
 
 		data, err := v.enc.GetEncodedData()
 		if err != nil {
+			log.Debug("get encoded data failed", zap.Error(err))
 			break
 		}
 
@@ -155,8 +160,8 @@ func (v *VideoPipeline) getEncodedDataAndSendFrame() {
 
 		v.sendVideoFrame(&VideoFrame{
 			Data:     data,
-			Codec:    video.VP9,
-			Format:   video.YUV420,
+			Codec:    v.codec,
+			Format:   v.pixFormat,
 			Width:    v.width,
 			Height:   v.height,
 			Duration: 1 / v.fps * 1000,
@@ -168,16 +173,28 @@ func (v *VideoPipeline) getEncodedDataAndSendFrame() {
 
 func (v *VideoPipeline) createEncoder() error {
 	var err error
-	if v.enc, err = encoder.NewVP9Encoder(v.width, v.height, int(v.fps)); err != nil {
-		return err
+
+	switch v.codec {
+	case video.VP9:
+		if v.enc, err = encoder.NewVP9Encoder(v.width, v.height, int(v.fps), v.pixFormat); err != nil {
+			log.Error("create encoder failed", zap.Error(err))
+			return err
+		}
+		return nil
+	case video.H264:
+		if v.enc, err = encoder.NewH264Encoder(v.width, v.height, int(v.fps), v.pixFormat); err != nil {
+			log.Error("create encoder failed", zap.Error(err))
+			return err
+		}
+		return nil
+	default:
+		return nil
 	}
-	return nil
 }
 
 func (v *VideoPipeline) Close() error {
 	v.enc.Close()
 	v.enc = nil
-
 	v.pixelFmt = nil
 	v.swsManager.Reset()
 

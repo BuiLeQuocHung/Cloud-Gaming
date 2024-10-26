@@ -7,6 +7,6 @@ RUN go mod download
 RUN go mod tidy
 
 COPY . .
-RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o /cmd/coordinator ./cmd/coordinator/main.go
+RUN GOOS=linux GOARCH=amd64 go build -o /cmd/coordinator ./cmd/coordinator/main.go
 
 ENTRYPOINT [ "/cmd/coordinator" ]

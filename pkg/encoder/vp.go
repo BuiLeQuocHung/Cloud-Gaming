@@ -1,23 +1,5 @@
 package encoder
 
-/*
-#cgo pkg-config: libavutil libavcodec libavformat libswscale libdrm liblzma libswresample vpx x264
-#include <libswscale/swscale.h>
-#include <libavcodec/avcodec.h>
-#include <libavutil/opt.h>
-#include <libavutil/avutil.h>
-#include <libavutil/imgutils.h>
-#include <libavutil/error.h>
-#include <vpx/vpx_encoder.h>
-#include <errno.h>
-
-
-#include <stdlib.h>
-#include <string.h>
-#include <stdint.h>
-*/
-import "C"
-
 import (
 	"cloud_gaming/pkg/ffmpeg/utils"
 	"cloud_gaming/pkg/ffmpeg/video"
@@ -34,13 +16,12 @@ type (
 
 		width  int
 		height int
-		fps    int
 
 		isShuttingDown bool
 	}
 )
 
-func NewVP9Encoder(width, height, fps int) (IVideoEncoder, error) {
+func NewVP9Encoder(width, height, fps int, pixFmt video.PixelFormat) (IVideoEncoder, error) {
 	codec, err := video.NewCodec(video.VP9)
 	if err != nil {
 		return nil, err
@@ -53,17 +34,17 @@ func NewVP9Encoder(width, height, fps int) (IVideoEncoder, error) {
 
 	dict := video.NewDictionary(map[string]string{
 		"crf":      "28", // 0-63 bigger means smaller size but lower quality
-		"cpu-used": "5",  // 0-8 bigger means higher speed but lower quality and compression
-		"preset":   "superfast ",
+		"cpu-used": "6",  // 0-8 bigger means higher speed but lower quality and compression
+		"preset":   "superfast",
 	})
 
 	opts := []video.CodecCtxOption{
-		video.SetBitrate(400000),
+		video.SetBitrate(2000000),
 		video.SetWidth(width),
 		video.SetHeight(height),
 		video.SetTimebase(*video.NewRational(1, fps)),
-		video.SetPixelFormat(int(video.YUV420)),
-		video.SetGopSize(fps / 3),
+		video.SetPixelFormat(int(pixFmt)),
+		video.SetGopSize(fps / 2),
 		video.SetMaxBFrames(0),
 		video.SetThreadCount(10),
 		video.SetThreadType(video.ThreadFrame),
@@ -90,7 +71,7 @@ func (e *VP9Encoder) Encode(videoFrame *video.AVFrame, fps int) error {
 
 	// is shutting down
 	if !e.isRunning() {
-		return nil
+		return errors.New("vp9 encoder is shutting down")
 	}
 
 	return video.EncodeFrame(e.codecCtx, videoFrame)

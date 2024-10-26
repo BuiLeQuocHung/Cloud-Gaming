@@ -11,10 +11,15 @@ import (
 )
 
 type (
-	SwsContext = C.struct_SwsContext
+	SwsContext     = C.struct_SwsContext
+	SwsScalingType int
 )
 
-func NewSwsCtx(from_width, from_height, to_width, to_height int, from_format, to_format VideoFormat, scalingAlgo int) *SwsContext {
+const (
+	SWS_BILINEAR = C.SWS_BILINEAR
+)
+
+func NewSwsCtx(from_width, from_height, to_width, to_height int, from_format, to_format PixelFormat, scalingAlgo int) *SwsContext {
 	return C.sws_getContext(
 		C.int(from_width), C.int(from_height), int32(from_format),
 		C.int(to_width), C.int(to_height), int32(to_format),
@@ -25,7 +30,7 @@ func (c *SwsContext) Free() {
 	C.sws_freeContext(c)
 }
 
-func ScaleAndConvertFrame(swsCtx *SwsContext, srcFrame *AVFrame, targetWidth, targetHeight int, targetFormat VideoFormat) (*AVFrame, error) {
+func ScaleAndConvertFrame(swsCtx *SwsContext, srcFrame *AVFrame, targetWidth, targetHeight int, targetFormat PixelFormat) (*AVFrame, error) {
 	if swsCtx == nil {
 		return nil, errors.New("ScaleAndConvertFrame: sws context is nil")
 	}

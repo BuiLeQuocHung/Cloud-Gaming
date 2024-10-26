@@ -18,9 +18,9 @@ type (
 	Codec      = C.AVCodec
 	Dictionary = C.AVDictionary
 
-	VideoCodec int
-	ThreadType int
-	Discard    int
+	VideoCodec  int
+	ThreadType  int
+	DiscardType int
 
 	CodecCtxOption func(codecCtx *CodecCtx)
 )
@@ -28,6 +28,7 @@ type (
 const (
 	NoCodec VideoCodec = C.AV_CODEC_ID_NONE
 	VP9     VideoCodec = C.AV_CODEC_ID_VP9
+	H264    VideoCodec = C.AV_CODEC_ID_H264
 )
 
 const (
@@ -36,12 +37,12 @@ const (
 )
 
 const (
-	DiscardNone     Discard = C.AVDISCARD_NONE // default
-	DiscardNonRef   Discard = C.AVDISCARD_NONREF
-	DiscardDefault  Discard = C.AVDISCARD_DEFAULT
-	DiscardBiDir    Discard = C.AVDISCARD_BIDIR
-	DiscardNonInfra Discard = C.AVDISCARD_NONINTRA
-	DiscardAll      Discard = C.AVDISCARD_ALL
+	DiscardNone     DiscardType = C.AVDISCARD_NONE // default
+	DiscardNonRef   DiscardType = C.AVDISCARD_NONREF
+	DiscardDefault  DiscardType = C.AVDISCARD_DEFAULT
+	DiscardBiDir    DiscardType = C.AVDISCARD_BIDIR
+	DiscardNonInfra DiscardType = C.AVDISCARD_NONINTRA
+	DiscardAll      DiscardType = C.AVDISCARD_ALL
 )
 
 func NewCodec(codec_type VideoCodec) (*Codec, error) {
@@ -70,6 +71,10 @@ func OpenContext(codecCtx *CodecCtx, codec *Codec, dictionary *Dictionary, optio
 		return fmt.Errorf("open codec context failed: %w", utils.CErrorToString(int(ret)))
 	}
 	return nil
+}
+
+func (c *CodecCtx) GetTimebase() Rational {
+	return c.time_base
 }
 
 func SetWidth(width int) CodecCtxOption {
@@ -126,9 +131,21 @@ func SetThreadType(threadType ThreadType) CodecCtxOption {
 	}
 }
 
-func SetSkipFrame(skipFrame Discard) CodecCtxOption {
+func SetSkipFrame(skipFrame DiscardType) CodecCtxOption {
 	return func(c *CodecCtx) {
 		c.skip_frame = int32(skipFrame)
+	}
+}
+
+func SetProfile(profile ProfileType) CodecCtxOption {
+	return func(c *CodecCtx) {
+		c.profile = C.int(profile)
+	}
+}
+
+func SetLevel(level int) CodecCtxOption {
+	return func(c *CodecCtx) {
+		c.level = C.int(level)
 	}
 }
 

@@ -1,12 +1,5 @@
 package video
 
-/*
-#cgo pkg-config: libavutil libswscale
-#include <libavutil/frame.h>
-#include <libavutil/imgutils.h>
-#include <libswscale/swscale.h>
-*/
-import "C"
 import (
 	"cloud_gaming/pkg/ffmpeg/video"
 )
@@ -21,7 +14,7 @@ func NewConverter() *Converter {
 }
 
 // RGB/RGBA to frame only
-func (c *Converter) ToFrame(data []byte, width, height, pitch int, format video.VideoFormat) (*video.AVFrame, error) {
+func (c *Converter) ToFrame(data []byte, width, height, pitch int, format video.PixelFormat) (*video.AVFrame, error) {
 	frame, err := video.NewFrameWithBufferAsArray(width, height, format, data)
 	if err != nil {
 		return nil, err
@@ -31,17 +24,17 @@ func (c *Converter) ToFrame(data []byte, width, height, pitch int, format video.
 	return frame, nil
 }
 
-func (c *Converter) ConvertAndResize(swsCtxManager *SwsCtxManager, srcFrame *video.AVFrame, targetWidth, targetHeight int, targetFormat video.VideoFormat) (*video.AVFrame, error) {
+func (c *Converter) ConvertAndResize(swsCtxManager *SwsCtxManager, srcFrame *video.AVFrame, targetWidth, targetHeight int, targetFormat video.PixelFormat) (*video.AVFrame, error) {
 	swsCtxKey := &SwsCtxKey{
 		from_width:  srcFrame.GetWidth(),
 		from_height: srcFrame.GetHeight(),
-		from_format: video.VideoFormat(srcFrame.GetFormat()),
+		from_format: video.PixelFormat(srcFrame.GetFormat()),
 
 		to_width:  targetWidth,
 		to_height: targetHeight,
 		to_format: targetFormat,
 
-		scalingAlgo: C.SWS_BILINEAR,
+		scalingAlgo: video.SWS_BILINEAR,
 	}
 
 	swsCtx := swsCtxManager.Get(swsCtxKey)

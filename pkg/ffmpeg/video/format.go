@@ -7,11 +7,11 @@ package video
 import "C"
 
 type (
-	VideoFormat int
+	PixelFormat int
 )
 
 const (
-	RGB    VideoFormat = C.AV_PIX_FMT_RGB24
-	RGBA   VideoFormat = C.AV_PIX_FMT_RGBA
-	YUV420 VideoFormat = C.AV_PIX_FMT_YUV420P
+	RGB    PixelFormat = C.AV_PIX_FMT_RGB24
+	RGBA   PixelFormat = C.AV_PIX_FMT_RGBA
+	YUV420 PixelFormat = C.AV_PIX_FMT_YUV420P
 )
