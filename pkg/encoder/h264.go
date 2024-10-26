@@ -5,7 +5,6 @@ import (
 	"cloud_gaming/pkg/ffmpeg/video"
 	"errors"
 	"fmt"
-	"log"
 	"sync"
 )
 
@@ -79,7 +78,6 @@ func (e *H264Encoder) Encode(videoFrame *video.AVFrame, fps int) error {
 	}
 
 	videoFrame.SetPTS(e.getFramePts())
-	log.Println("frame pts: ", videoFrame.GetPTS())
 	return video.EncodeFrame(e.codecCtx, videoFrame)
 }
 

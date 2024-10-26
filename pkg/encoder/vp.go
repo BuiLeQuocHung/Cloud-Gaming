@@ -33,8 +33,8 @@ func NewVP9Encoder(width, height, fps int, pixFmt video.PixelFormat) (IVideoEnco
 	}
 
 	dict := video.NewDictionary(map[string]string{
-		"crf":      "28", // 0-63 bigger means smaller size but lower quality
-		"cpu-used": "6",  // 0-8 bigger means higher speed but lower quality and compression
+		"crf":      "23", // 0-63 bigger means smaller size but lower quality
+		"cpu-used": "5",  // 0-8 bigger means higher speed but lower quality and compression
 		"preset":   "superfast",
 	})
 
