@@ -20,17 +20,4 @@ type (
 		Encode([]int16) ([]byte, error)
 		Close() error
 	}
-
-	VideoCodec int
-	AudioCodec int
-)
-
-const (
-	NoVCodec VideoCodec = C.AV_CODEC_ID_NONE
-	VP9      VideoCodec = C.AV_CODEC_ID_VP9
-)
-
-const (
-	NoACodec AudioCodec = iota
-	OPUS
 )

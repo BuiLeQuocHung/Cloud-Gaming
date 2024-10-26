@@ -24,10 +24,10 @@ type (
 	}
 
 	AudioPacket struct {
-		Buffer   []byte             `json:"buffer"`
-		Format   audio.AudioFormat  `json:"format"`
-		Codec    encoder.AudioCodec `json:"codec"`
-		Duration float64            `json:"duration"` // in milliseconds
+		Buffer   []byte            `json:"buffer"`
+		Format   audio.AudioFormat `json:"format"`
+		Codec    audio.AudioCodec  `json:"codec"`
+		Duration float64           `json:"duration"` // in milliseconds
 	}
 
 	SendAudioPacketFunc func(*AudioPacket)
@@ -87,7 +87,7 @@ func (a *AudioPipeline) Process(data []int16, frames int32) {
 			a._sendAudioPacket(&AudioPacket{
 				Buffer:   buf,
 				Format:   audio.PCM,
-				Codec:    encoder.OPUS,
+				Codec:    audio.OPUS,
 				Duration: 10,
 			})
 		}

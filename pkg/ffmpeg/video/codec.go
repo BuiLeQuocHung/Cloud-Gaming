@@ -26,8 +26,8 @@ type (
 )
 
 const (
-	NoVCodec VideoCodec = C.AV_CODEC_ID_NONE
-	VP9      VideoCodec = C.AV_CODEC_ID_VP9
+	NoCodec VideoCodec = C.AV_CODEC_ID_NONE
+	VP9     VideoCodec = C.AV_CODEC_ID_VP9
 )
 
 const (

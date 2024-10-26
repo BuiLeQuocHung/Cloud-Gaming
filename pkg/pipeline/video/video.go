@@ -37,12 +37,12 @@ type (
 	}
 
 	VideoFrame struct {
-		Data     []byte             `json:"data"`
-		Codec    encoder.VideoCodec `json:"codec"`
-		Format   video.VideoFormat  `json:"format"`
-		Width    int                `json:"width"`
-		Height   int                `json:"height"`
-		Duration float64            // in seconds
+		Data     []byte            `json:"data"`
+		Codec    video.VideoCodec  `json:"codec"`
+		Format   video.VideoFormat `json:"format"`
+		Width    int               `json:"width"`
+		Height   int               `json:"height"`
+		Duration float64           // in seconds
 	}
 
 	SendVideoFrameFunc func(*VideoFrame)
@@ -155,7 +155,7 @@ func (v *VideoPipeline) getEncodedDataAndSendFrame() {
 
 		v.sendVideoFrame(&VideoFrame{
 			Data:     data,
-			Codec:    encoder.VP9,
+			Codec:    video.VP9,
 			Format:   video.YUV420,
 			Width:    v.width,
 			Height:   v.height,

@@ -52,9 +52,9 @@ func NewVP9Encoder(width, height, fps int) (IVideoEncoder, error) {
 	}
 
 	dict := video.NewDictionary(map[string]string{
-		"crf":      "23", // 0-63 bigger means smaller size but lower quality
-		"cpu-used": "4",  // 0-8 bigger means higher speed but lower quality and compression
-		"preset":   "faster",
+		"crf":      "28", // 0-63 bigger means smaller size but lower quality
+		"cpu-used": "5",  // 0-8 bigger means higher speed but lower quality and compression
+		"preset":   "superfast ",
 	})
 
 	opts := []video.CodecCtxOption{
@@ -63,9 +63,9 @@ func NewVP9Encoder(width, height, fps int) (IVideoEncoder, error) {
 		video.SetHeight(height),
 		video.SetTimebase(*video.NewRational(1, fps)),
 		video.SetPixelFormat(int(video.YUV420)),
-		video.SetGopSize(fps / 2),
+		video.SetGopSize(fps / 3),
 		video.SetMaxBFrames(0),
-		video.SetThreadCount(8),
+		video.SetThreadCount(10),
 		video.SetThreadType(video.ThreadFrame),
 		video.SetSkipFrame(video.DiscardNonRef),
 	}
@@ -106,11 +106,10 @@ func (e *VP9Encoder) GetEncodedData() ([]byte, error) {
 	}
 
 	pkt, err := video.GetEncodedPacket(e.codecCtx)
-	defer pkt.Close()
-
 	if err != nil {
 		return nil, err
 	}
+	defer pkt.Close()
 
 	if pkt == nil {
 		return nil, nil
