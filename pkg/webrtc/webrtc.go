@@ -4,6 +4,7 @@ import (
 	"cloud_gaming/pkg/log"
 	"cloud_gaming/pkg/message"
 	"encoding/json"
+	"fmt"
 
 	_websocket "cloud_gaming/pkg/websocket"
 
@@ -24,6 +25,7 @@ type (
 
 func NewPeerConnection(signalConn *_websocket.Conn, factory *Factory,
 	callbackWebRTCDisconnectedFunc func(),
+	keyboardCallback, mouseCallback func(msg webrtc.DataChannelMessage),
 ) (*PeerConnection, error) {
 	peerConn, err := factory.NewPeerConnection(
 		webrtc.Configuration{
@@ -72,6 +74,15 @@ func NewPeerConnection(signalConn *_websocket.Conn, factory *Factory,
 	}
 
 	if err := pc.addAVTrack(); err != nil {
+		pc.Close()
+		return nil, err
+	}
+
+	if err := pc.addInputChannel(
+		keyboardCallback,
+		mouseCallback,
+	); err != nil {
+		pc.Close()
 		return nil, err
 	}
 	return pc, nil
@@ -90,8 +101,7 @@ func (pc *PeerConnection) addAVTrack() error {
 		"video",
 	)
 	if err != nil {
-		log.Error("create video track: ", zap.Error(err))
-		return err
+		return fmt.Errorf("create video track failed: %w", err)
 	}
 	pc.vTrack = videoTrack
 
@@ -101,8 +111,7 @@ func (pc *PeerConnection) addAVTrack() error {
 		"audio",
 	)
 	if err != nil {
-		log.Error("create audio track: ", zap.Error(err))
-		return err
+		return fmt.Errorf("create audio track failed: %w", err)
 	}
 	pc.aTrack = audioTrack
 
@@ -111,7 +120,7 @@ func (pc *PeerConnection) addAVTrack() error {
 	return nil
 }
 
-func (pc *PeerConnection) AddInputChannel(keyboardbCallback, mouseCallback func(msg webrtc.DataChannelMessage)) error {
+func (pc *PeerConnection) addInputChannel(keyboardbCallback, mouseCallback func(msg webrtc.DataChannelMessage)) error {
 	kbChannel, err := pc.CreateDataChannel("keyboard", nil)
 	if err != nil {
 		return err

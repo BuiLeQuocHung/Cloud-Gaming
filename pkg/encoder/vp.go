@@ -65,7 +65,7 @@ func NewVP9Encoder(width, height, fps int, pixFmt video.PixelFormat) (IVideoEnco
 	return enc, nil
 }
 
-func (e *VP9Encoder) Encode(videoFrame *video.AVFrame, fps int) error {
+func (e *VP9Encoder) Encode(videoFrame *video.AVFrame) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 

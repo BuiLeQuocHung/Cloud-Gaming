@@ -38,11 +38,11 @@ func New() (*Worker, error) {
 		storage:  storage.New(),
 	}
 
-	w.videoPipe, err = video.NewVideoPipeline(w.sendVideoFrame())
+	w.videoPipe, err = video.NewVideoPipeline(w.sendVideoFrame)
 	if err != nil {
 		return nil, err
 	}
-	w.audioPipe = audio.NewAudioPipeline(w.sendAudioPacket())
+	w.audioPipe = audio.NewAudioPipeline(w.sendAudioPacket)
 	return w, nil
 }
 
@@ -90,36 +90,30 @@ func (w *Worker) requestHandler() {
 		msg := &message.RequestMsg{}
 		if err := json.Unmarshal(data, msg); err != nil {
 			w.sendError("unknown", "unmarshal request message failed")
-			break
+			continue
 		}
 
 		switch msg.Label {
 		case message.MSG_WEBRTC_INIT:
-			err = w.peerConn.AddInputChannel(
-				w.handleKeyboardChannel(),
-				w.handleMouseChannel(),
-			)
-			if err != nil {
-				log.Error("create input channel failed", zap.Error(err))
-				w.sendError(msg.Label, "create input channel failed")
-			}
-
 			localSD, err := w.peerConn.CreateOffer(nil)
 			if err != nil {
 				log.Error("create local session description failed", zap.Error(err))
 				w.sendError(msg.Label, "create local session description failed")
+				continue
 			}
 
 			err = w.peerConn.SetLocalDescription(localSD)
 			if err != nil {
 				log.Error("set local description failed", zap.Error(err))
 				w.sendError(msg.Label, "set local description failed")
+				continue
 			}
 
 			payload, err := json.Marshal(localSD)
 			if err != nil {
 				log.Error("marshal local session description failed", zap.Error(err))
 				w.sendError(msg.Label, "marshal local session description failed")
+				continue
 			}
 
 			res := &message.ResponseMsg{
@@ -135,6 +129,7 @@ func (w *Worker) requestHandler() {
 			if err != nil {
 				log.Error("unmarshal session description offer failed", zap.Error(err))
 				w.sendError(msg.Label, "unmarshal session description offer failed")
+				continue
 			}
 			w.peerConn.SetRemoteDescription(*remoteSD)
 
@@ -144,6 +139,7 @@ func (w *Worker) requestHandler() {
 			if err != nil {
 				log.Error("unmarshal ice candidate failed", zap.Error(err))
 				w.sendError(msg.Label, "unmarshal ice candidate failed")
+				continue
 			}
 			w.peerConn.AddICECandidate(*candidate)
 
@@ -153,12 +149,14 @@ func (w *Worker) requestHandler() {
 			if err != nil {
 				log.Error("unmarshal game request failed", zap.Error(err))
 				w.sendError(msg.Label, "unmarshal game request failed")
+				continue
 			}
 
 			err = w.startEmulator(r)
 			if err != nil {
 				log.Error("start emulator failed", zap.Error(err))
 				w.sendError(msg.Label, "start emulator failed")
+				continue
 			}
 
 		case message.MSG_STOP_GAME:
@@ -197,5 +195,5 @@ func (w *Worker) resetWebRTC() (*_webrtc.PeerConnection, error) {
 		w.peerConn.Close()
 	}
 
-	return _webrtc.NewPeerConnection(w.coordinatorConn, w.webrtcFactory, w.callbackWebRTCDisconnected)
+	return _webrtc.NewPeerConnection(w.coordinatorConn, w.webrtcFactory, w.callbackWebRTCDisconnected, w.handleKeyboardChannel, w.handleMouseChannel)
 }

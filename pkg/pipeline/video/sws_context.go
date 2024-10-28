@@ -45,6 +45,7 @@ func (c *SwsCtxManager) Get(k *SwsCtxKey) *video.SwsContext {
 func (c *SwsCtxManager) Set(k *SwsCtxKey, swsCtx *video.SwsContext) {
 	_, ok := c.ctxMap[*k]
 	if !ok {
+		swsCtx.Free()
 		return
 	}
 

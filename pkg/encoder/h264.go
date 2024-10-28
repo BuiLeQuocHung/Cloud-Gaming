@@ -68,7 +68,7 @@ func NewH264Encoder(width, height, fps int, pixFmt video.PixelFormat) (IVideoEnc
 	return enc, nil
 }
 
-func (e *H264Encoder) Encode(videoFrame *video.AVFrame, fps int) error {
+func (e *H264Encoder) Encode(videoFrame *video.AVFrame) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 

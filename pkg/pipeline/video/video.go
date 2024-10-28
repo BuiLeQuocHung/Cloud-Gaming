@@ -44,7 +44,7 @@ type (
 		Format   video.PixelFormat `json:"format"`
 		Width    int               `json:"width"`
 		Height   int               `json:"height"`
-		Duration float64           // in seconds
+		Duration float64           // in milliseconds
 	}
 
 	SendVideoFrameFunc func(*VideoFrame)
@@ -135,7 +135,7 @@ func (v *VideoPipeline) Process(data []byte, width, height, pitch int32) {
 		return
 	}
 
-	err = v.enc.Encode(frame, int(v.fps))
+	err = v.enc.Encode(frame)
 	if err != nil {
 		log.Error("encode failed", zap.Error(err))
 		return
@@ -194,8 +194,6 @@ func (v *VideoPipeline) createEncoder() error {
 
 func (v *VideoPipeline) Close() error {
 	v.enc.Close()
-	v.enc = nil
-	v.pixelFmt = nil
 	v.swsManager.Reset()
 
 	return nil

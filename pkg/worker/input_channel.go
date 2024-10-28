@@ -28,33 +28,29 @@ type (
 	}
 )
 
-func (w *Worker) handleKeyboardChannel() func(msg webrtc.DataChannelMessage) {
-	return func(msg webrtc.DataChannelMessage) {
-		var kb = &keyboardData{}
-		err := json.Unmarshal(msg.Data, kb)
-		if err != nil {
-			log.Error("unmarshal keyboard data failed", zap.Error(err))
-			return
-		}
+func (w *Worker) handleKeyboardChannel(msg webrtc.DataChannelMessage) {
+	var kb = &keyboardData{}
+	err := json.Unmarshal(msg.Data, kb)
+	if err != nil {
+		log.Error("unmarshal keyboard data failed", zap.Error(err))
+		return
+	}
 
-		user := kb.User
-		for _, bt := range kb.ButtonState {
-			w.emulator.SetKeyboardState(user, bt.Button, bt.Pressed)
-		}
+	user := kb.User
+	for _, bt := range kb.ButtonState {
+		w.emulator.SetKeyboardState(user, bt.Button, bt.Pressed)
 	}
 }
 
-func (w *Worker) handleMouseChannel() func(msg webrtc.DataChannelMessage) {
-	return func(msg webrtc.DataChannelMessage) {
-		var mouse = &mouseData{}
-		err := json.Unmarshal(msg.Data, mouse)
-		if err != nil {
-			log.Error("unmarshal mouse data failed", zap.Error(err))
-			return
-		}
-
-		user := mouse.User
-		w.emulator.SetMouseState(user, uint(mouse.Button))
-		w.emulator.SetMousePos(user, mouse.PosX, mouse.PosY)
+func (w *Worker) handleMouseChannel(msg webrtc.DataChannelMessage) {
+	var mouse = &mouseData{}
+	err := json.Unmarshal(msg.Data, mouse)
+	if err != nil {
+		log.Error("unmarshal mouse data failed", zap.Error(err))
+		return
 	}
+
+	user := mouse.User
+	w.emulator.SetMouseState(user, uint(mouse.Button))
+	w.emulator.SetMousePos(user, mouse.PosX, mouse.PosY)
 }
