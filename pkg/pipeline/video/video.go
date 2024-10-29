@@ -1,7 +1,6 @@
 package video
 
 import (
-	"cloud_gaming/pkg/encoder"
 	"cloud_gaming/pkg/ffmpeg/video"
 	"cloud_gaming/pkg/libretro"
 	"cloud_gaming/pkg/log"
@@ -14,6 +13,7 @@ type (
 	VideoPipeline struct {
 		swsManager *SwsCtxManager
 		converter  *Converter
+		enc        *Encoder
 
 		// pixelFmt, angle will be set by coreEnvironment once the core is loaded
 		// will be consistent through core's lifetime
@@ -29,8 +29,6 @@ type (
 		fps float64
 
 		sendVideoFrame SendVideoFrameFunc
-
-		enc encoder.IVideoEncoder
 	}
 
 	PixelFmt struct {
@@ -65,7 +63,13 @@ func NewVideoPipeline(sendVideoFrame SendVideoFrameFunc) (*VideoPipeline, error)
 }
 
 func (v *VideoPipeline) Start() {
-	v.createEncoder()
+	enc, err := NewEncoder(v.codec, v.width, v.height, v.pixFormat, v.fps)
+	if err != nil {
+		log.Error("create encoder failed", zap.Error(err))
+		return
+	}
+	v.enc = enc
+
 	go v.getEncodedDataAndSendFrame()
 }
 
@@ -124,7 +128,7 @@ func (v *VideoPipeline) Process(data []byte, width, height, pitch int32) {
 	}
 	defer rgbFrame.Close()
 
-	frame, err := v.converter.ConvertAndResize(v.swsManager, rgbFrame, v.width, v.height, video.YUV420)
+	frame, err := v.converter.ConvertAndResize(v.swsManager, rgbFrame, v.width, v.height, v.pixFormat)
 	if err != nil {
 		log.Error("convert and resize failed", zap.Error(err))
 		return
@@ -169,27 +173,6 @@ func (v *VideoPipeline) getEncodedDataAndSendFrame() {
 	}
 
 	log.Debug("getEncodedDataAndSendFrame has stopped")
-}
-
-func (v *VideoPipeline) createEncoder() error {
-	var err error
-
-	switch v.codec {
-	case video.VP9:
-		if v.enc, err = encoder.NewVP9Encoder(v.width, v.height, int(v.fps), v.pixFormat); err != nil {
-			log.Error("create encoder failed", zap.Error(err))
-			return err
-		}
-		return nil
-	case video.H264:
-		if v.enc, err = encoder.NewH264Encoder(v.width, v.height, int(v.fps), v.pixFormat); err != nil {
-			log.Error("create encoder failed", zap.Error(err))
-			return err
-		}
-		return nil
-	default:
-		return nil
-	}
 }
 
 func (v *VideoPipeline) Close() error {

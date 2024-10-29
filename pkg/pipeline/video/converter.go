@@ -5,8 +5,7 @@ import (
 )
 
 type (
-	Converter struct {
-	}
+	Converter struct{}
 )
 
 func NewConverter() *Converter {

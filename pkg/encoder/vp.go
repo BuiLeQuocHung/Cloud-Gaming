@@ -14,9 +14,6 @@ type (
 		mu       sync.Mutex
 		codecCtx *video.CodecCtx
 
-		width  int
-		height int
-
 		isShuttingDown bool
 	}
 )
@@ -58,8 +55,6 @@ func NewVP9Encoder(width, height, fps int, pixFmt video.PixelFormat) (IVideoEnco
 
 	enc := &VP9Encoder{
 		codecCtx: codecCtx,
-		width:    width,
-		height:   height,
 	}
 
 	return enc, nil

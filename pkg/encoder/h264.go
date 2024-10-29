@@ -14,9 +14,6 @@ type (
 		mu       sync.Mutex
 		codecCtx *video.CodecCtx
 
-		width  int
-		height int
-
 		isShuttingDown bool
 
 		totalFrames int
@@ -61,8 +58,6 @@ func NewH264Encoder(width, height, fps int, pixFmt video.PixelFormat) (IVideoEnc
 
 	enc := &H264Encoder{
 		codecCtx: codecCtx,
-		width:    width,
-		height:   height,
 	}
 
 	return enc, nil
@@ -104,13 +99,6 @@ func (e *H264Encoder) GetEncodedData() ([]byte, error) {
 
 	return utils.PointerToSlice(pkt.GetData(), pkt.GetSize()), nil
 }
-
-// // calculate current frame pts
-// func (e *H264Encoder) getFramePts() int64 {
-// 	e.totalFrames += 1
-// 	time_base := e.codecCtx.GetTimebase()
-// 	return int64(float64(e.totalFrames*90000) * time_base.ToFloat())
-// }
 
 func (e *H264Encoder) stopping() {
 	e.isShuttingDown = true
