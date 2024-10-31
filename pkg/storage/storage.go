@@ -32,7 +32,7 @@ func New() *Storage {
 	s := &Storage{}
 
 	s.loadAllGamesMetadata()
-	s.LoadCoresMetadata()
+	s.loadCoresMetadata()
 	return s
 }
 
@@ -71,7 +71,7 @@ func (s *Storage) loadAllGamesMetadata() {
 	s.games = res
 }
 
-func (s *Storage) LoadCoresMetadata() {
+func (s *Storage) loadCoresMetadata() {
 	dir := "./pkg/storage/core"
 
 	path, err := filepath.Abs(dir)

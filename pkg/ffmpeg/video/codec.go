@@ -10,13 +10,11 @@ import (
 	"cloud_gaming/pkg/ffmpeg/utils"
 	"errors"
 	"fmt"
-	"unsafe"
 )
 
 type (
-	CodecCtx   = C.AVCodecContext
-	Codec      = C.AVCodec
-	Dictionary = C.AVDictionary
+	CodecCtx = C.AVCodecContext
+	Codec    = C.AVCodec
 
 	VideoCodec  int
 	ThreadType  int
@@ -197,22 +195,6 @@ func Flush(codecCtx *CodecCtx) error {
 	}
 
 	return nil
-}
-
-func NewDictionary(m map[string]string) *Dictionary {
-	var dict *Dictionary
-
-	for k, v := range m {
-		ck := C.CString(k)
-		cv := C.CString(v)
-
-		C.av_dict_set(&dict, ck, cv, 0)
-
-		C.free(unsafe.Pointer(ck))
-		C.free(unsafe.Pointer(cv))
-	}
-
-	return dict
 }
 
 func (c *CodecCtx) Free() {
