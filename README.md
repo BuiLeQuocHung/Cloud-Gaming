@@ -21,5 +21,6 @@ $ docker-compose -f ./docker/compose.yaml up --build
 
 ```
 $ cd client/my-app/
+$ npm install
 $ npm start
 ```

@@ -39,9 +39,6 @@ const Streaming = ({mediaStream}) => {
       console.log(mediaStream.getVideoTracks()[0].getSettings().frameRate)
   }, 1000);
 
-  console.log(mediaStream.getAudioTracks()[0].enabled);  // Should be true
-  console.log(mediaStream.getAudioTracks()[0].muted);    // Should be false
-
   
 
   return (

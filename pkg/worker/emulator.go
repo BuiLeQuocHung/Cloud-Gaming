@@ -1,7 +1,6 @@
 package worker
 
 import (
-	"cloud_gaming/pkg/emulator"
 	"cloud_gaming/pkg/libretro"
 	"cloud_gaming/pkg/log"
 	"errors"
@@ -57,39 +56,14 @@ func (w *Worker) startEmulator(r *StartGameRequest) error {
 	w.setSystemAVInfo(&systemAVInfo)
 
 	w.videoPipe.Start()
-
-	log.Debug("system av info", zap.Any("info", systemAVInfo))
-	log.Debug("start game", zap.String("game", r.Game))
-
-	go w.startGame()
+	w.emulator.StartGame()
 	return nil
 }
 
-func (w *Worker) startGame() {
-	w.emulator.SetState(emulator.Running)
-
-	for w.emulator.IsRunning() {
-		w.emulator.Run()
-	}
-
-	w.stopGame()
-}
-
-func (w *Worker) stopGame() {
-	w.emulator.SetState(emulator.Deinitializing)
-	w.emulator.UnloadGame()
-	w.emulator.DeInit()
-
+func (w *Worker) stopEmulator() {
+	w.emulator.StopGame()
 	w.videoPipe.Close()
 	w.audioPipe.Close()
-
-	w.emulator.SetState(emulator.Ready)
-}
-
-func (w *Worker) stopEmulator() {
-	if w.emulator.IsRunning() {
-		w.emulator.SetState(emulator.Deinitializing)
-	}
 }
 
 func (w *Worker) setSystemAVInfo(systemAVInfo *libretro.SystemAVInfo) {

@@ -136,13 +136,40 @@ func (e *Emulator) UnloadGame() {
 }
 
 // Run runs the game for one video frame.
-func (e *Emulator) Run() {
+func (e *Emulator) run() {
 	curTime := time.Now()
 	delta := time.Second / time.Duration(e.systemInfo.Timing.FPS)
 	if time.Since((e.lastTime)) >= delta {
 		e.core.Run()
 		e.lastTime = curTime
 	}
+}
+
+func (e *Emulator) StartGame() {
+	go e.startGame()
+}
+
+func (e *Emulator) startGame() {
+	e.SetState(Running)
+
+	for e.IsRunning() {
+		e.run()
+	}
+
+	e.stopGame()
+}
+
+func (e *Emulator) StopGame() {
+	if e.IsRunning() {
+		e.SetState(Deinitializing)
+	}
+}
+
+func (e *Emulator) stopGame() {
+	e.SetState(Deinitializing)
+	e.UnloadGame()
+	e.DeInit()
+	e.SetState(Ready)
 }
 
 // GetSystemAVInfo returns information about
