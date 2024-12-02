@@ -16,12 +16,12 @@ func (c *Coordinator) userRequestHandler(connection *Connection) {
 		if err != nil {
 			log.Debug("user web socket closed", zap.Error(err))
 
-			pair := c.binding.removeBinding(senderId)
+			pair := c.binding.RemoveBinding(senderId)
 			if pair == nil {
 				break
 			}
 
-			c.freeWorkers = append(c.freeWorkers, pair.worker)
+			c.freeWorkers <- pair.worker
 			conn.Close()
 			break
 		}

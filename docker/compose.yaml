@@ -1,11 +1,13 @@
 services:
   coordinator:
+    image: coordinator:v1.0
     build:
       context: ../
       dockerfile: docker/coordinator/Dockerfile
     ports:
       - 9090:9090
   worker:
+    image: worker:v1.0
     build:
       context: ../
       dockerfile: docker/worker/Dockerfile

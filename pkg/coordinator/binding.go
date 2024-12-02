@@ -1,7 +1,6 @@
 package coordinator
 
 import (
-	"math/rand"
 	"sync"
 )
 
@@ -26,37 +25,17 @@ func NewBinding() *Binding {
 	}
 }
 
-func (c *Coordinator) bindUserAndWorker(userConn *Connection) bool {
-	c.binding.Lock()
-	defer c.binding.Unlock()
-
-	userId := userConn.id
-
-	n := len(c.freeWorkers)
-	if n == 0 {
-		return false
-	}
-
-	idx := rand.Int() % n
-	workerConn := c.freeWorkers[idx]
-
+func (b *Binding) Bind(userConn, workerConn *Connection) {
 	pair := &Pair{
 		user:   userConn,
 		worker: workerConn,
 	}
 
-	c.binding.users[userId] = pair
-	c.binding.workers[workerConn.id] = pair
-
-	temp := []*Connection{}
-	temp = append(temp, c.freeWorkers[:idx]...)
-	temp = append(temp, c.freeWorkers[idx+1:]...)
-	c.freeWorkers = temp
-
-	return true
+	b.workers[workerConn.id] = pair
+	b.users[userConn.id] = pair
 }
 
-func (b *Binding) removeBinding(id string) *Pair {
+func (b *Binding) RemoveBinding(id string) *Pair {
 	var (
 		userID   string
 		workerID string

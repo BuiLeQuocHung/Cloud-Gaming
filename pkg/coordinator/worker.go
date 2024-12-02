@@ -16,7 +16,7 @@ func (c *Coordinator) workerRequestHandler(connection *Connection) {
 		if err != nil {
 			log.Debug("worker web socket closed", zap.Error(err))
 
-			pair := c.binding.removeBinding(senderId)
+			pair := c.binding.RemoveBinding(senderId)
 			if pair == nil {
 				break
 			}

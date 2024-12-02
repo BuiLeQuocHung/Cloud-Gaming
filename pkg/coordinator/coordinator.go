@@ -18,17 +18,15 @@ type (
 
 type (
 	Coordinator struct {
-		newConn     chan *Connection
 		binding     *Binding
-		freeWorkers []*Connection
+		freeWorkers chan *Connection
 
 		storage *storage.Storage
 	}
 
 	Connection struct {
-		id    string
-		_type ConnectionType
-		conn  *websocket.Conn
+		id   string
+		conn *websocket.Conn
 	}
 )
 
@@ -39,38 +37,16 @@ const (
 
 func New() *Coordinator {
 	return &Coordinator{
-		freeWorkers: []*Connection{},
+		freeWorkers: make(chan *Connection, 1000),
 		binding:     NewBinding(),
-		newConn:     make(chan *Connection, 10),
 		storage:     storage.New(),
 	}
 }
 
 func (c *Coordinator) Run() {
-	go c.listenForNewWebSocketConn()
-
 	http.HandleFunc("/init/worker/ws", c.handleInitWebSocketWorker())
 	http.HandleFunc("/init/user/ws", c.handleInitWebSocketUser())
 	http.ListenAndServe(":9090", nil)
-}
-
-func (c *Coordinator) listenForNewWebSocketConn() {
-	log.Debug("listening on websocket")
-
-	for {
-		select {
-		case conn := <-c.newConn:
-			switch conn._type {
-			case User:
-				go c.userRequestHandler(conn)
-			case Worker:
-				go c.workerRequestHandler(conn)
-			}
-
-		default:
-			continue
-		}
-	}
 }
 
 func (c *Coordinator) handleInitWebSocketWorker() http.HandlerFunc {
@@ -88,15 +64,12 @@ func (c *Coordinator) handleInitWebSocketWorker() http.HandlerFunc {
 			return
 		}
 
-		id := uuid.New()
-		newConn := &Connection{
-			id:    id.String(),
-			_type: Worker,
-			conn:  conn,
+		workerConn := &Connection{
+			id:   uuid.New().String(),
+			conn: conn,
 		}
-
-		c.newConn <- newConn
-		c.freeWorkers = append(c.freeWorkers, newConn)
+		c.freeWorkers <- workerConn
+		go c.workerRequestHandler(workerConn)
 	}
 }
 
@@ -113,14 +86,12 @@ func (c *Coordinator) handleInitWebSocketUser() http.HandlerFunc {
 			return
 		}
 
-		id := uuid.New()
-		newConn := &Connection{
-			id:    id.String(),
-			_type: User,
-			conn:  conn,
+		userConn := &Connection{
+			id:   uuid.New().String(),
+			conn: conn,
 		}
 
-		if !c.bindUserAndWorker(newConn) {
+		if !c.bindUserAndWorker(userConn) {
 			log.Error("cannot bind worker")
 			conn.Close()
 			return
@@ -133,13 +104,24 @@ func (c *Coordinator) handleInitWebSocketUser() http.HandlerFunc {
 		}
 
 		// send list games to client
-		newConn.conn.WriteJSON(message.ResponseMsg{
+		userConn.conn.WriteJSON(message.ResponseMsg{
 			Label:   message.MSG_COOR_HANDSHAKE,
 			Payload: payload,
 			Error:   nil,
 		})
 
 		log.Debug("Send game list to client", zap.Any("games", c.getListGames()))
-		c.newConn <- newConn
+		go c.userRequestHandler(userConn)
 	}
+}
+
+func (c *Coordinator) bindUserAndWorker(userConn *Connection) bool {
+	select {
+	case workerConn := <-c.freeWorkers:
+		c.binding.Bind(userConn, workerConn)
+	default:
+		return false
+	}
+
+	return true
 }
