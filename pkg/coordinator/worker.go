@@ -15,6 +15,7 @@ func (c *Coordinator) workerRequestHandler(connection *Connection) {
 		_, data, err := conn.ReadMessage()
 		if err != nil {
 			log.Debug("worker web socket closed", zap.Error(err))
+			conn.SetConnectionStatus(false)
 
 			pair := c.binding.RemoveBinding(senderId)
 			if pair == nil {

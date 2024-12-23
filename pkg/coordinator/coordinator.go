@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	_websocket "cloud_gaming/pkg/websocket"
+
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
@@ -26,7 +28,7 @@ type (
 
 	Connection struct {
 		id   string
-		conn *websocket.Conn
+		conn *_websocket.Conn
 	}
 )
 
@@ -66,7 +68,7 @@ func (c *Coordinator) handleInitWebSocketWorker() http.HandlerFunc {
 
 		workerConn := &Connection{
 			id:   uuid.New().String(),
-			conn: conn,
+			conn: _websocket.New(conn),
 		}
 		c.freeWorkers <- workerConn
 		go c.workerRequestHandler(workerConn)
@@ -88,7 +90,7 @@ func (c *Coordinator) handleInitWebSocketUser() http.HandlerFunc {
 
 		userConn := &Connection{
 			id:   uuid.New().String(),
-			conn: conn,
+			conn: _websocket.New(conn),
 		}
 
 		if !c.bindUserAndWorker(userConn) {
@@ -116,12 +118,15 @@ func (c *Coordinator) handleInitWebSocketUser() http.HandlerFunc {
 }
 
 func (c *Coordinator) bindUserAndWorker(userConn *Connection) bool {
-	select {
-	case workerConn := <-c.freeWorkers:
-		c.binding.Bind(userConn, workerConn)
-	default:
-		return false
+	for {
+		select {
+		case workerConn := <-c.freeWorkers:
+			if workerConn.conn.GetConnectionStatus() {
+				c.binding.Bind(userConn, workerConn)
+				return true
+			}
+		default:
+			return false
+		}
 	}
-
-	return true
 }
