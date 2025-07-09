@@ -8,7 +8,6 @@ Shout out to
 - https://github.com/pion/webrtc, a great library for webrtc connection
 
 # Run
-- Only work on Linux/Window
 - If you haven't installed docker yet, please install it at https://www.docker.com/
 ### From root directory:
 
