@@ -8,6 +8,7 @@ services:
       - 9090:9090
   worker:
     image: worker:v1.0
+    platform: linux/amd64
     build:
       context: ../
       dockerfile: docker/worker/Dockerfile
